@@ -18,6 +18,11 @@ func ShortifyHandler(writer http.ResponseWriter, request *http.Request) {
 	hashString := hash.Generate(body)
 	storage.SetValue(hashString, string(body))
 
+	if len(body) == 0 {
+		http.Error(writer, "URL should be provided", http.StatusBadRequest)
+		return
+	}
+
 	writer.Header().Set("content-type", "plain/text")
 	writer.WriteHeader(http.StatusCreated)
 	writer.Write([]byte("http://localhost:8080/" + hashString[:7]))
