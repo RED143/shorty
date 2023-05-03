@@ -4,22 +4,16 @@ import (
 	"net/http"
 
 	"github.com/RED143/shorty/internal/app/handlers"
+	"github.com/go-chi/chi/v5"
 )
 
-func routeHandler(writer http.ResponseWriter, request *http.Request) {
-	switch request.URL.String() {
-	case "/":
-		handlers.ShortifyHandler(writer, request)
-	default:
-		handlers.LinkHandler(writer, request)
-	}
-}
-
 func Start() {
-	mux := http.NewServeMux()
-	mux.HandleFunc(`/`, routeHandler)
+	router := chi.NewRouter()
 
-	err := http.ListenAndServe(`:8080`, mux)
+	router.Post("/", handlers.ShortifyHandler)
+	router.Get("/{hash}", handlers.LinkHandler)
+
+	err := http.ListenAndServe(`:8080`, router)
 
 	if err != nil {
 		panic(err)
