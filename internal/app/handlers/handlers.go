@@ -6,6 +6,7 @@ import (
 
 	"github.com/RED143/shorty/internal/app/hash"
 	"github.com/RED143/shorty/internal/app/storage"
+	"github.com/go-chi/chi/v5"
 )
 
 func ShortifyHandler(writer http.ResponseWriter, request *http.Request) {
@@ -34,7 +35,7 @@ func LinkHandler(writer http.ResponseWriter, request *http.Request) {
 		return
 	}
 
-	hash := request.URL.String()[1:]
+	hash := chi.URLParam(request, "hash")
 	link := storage.GetValue(hash)
 
 	if link == "" {
