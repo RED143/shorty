@@ -3,7 +3,9 @@ package handlers
 import (
 	"io"
 	"net/http"
+	"strings"
 
+	"github.com/RED143/shorty/internal/app/config"
 	"github.com/RED143/shorty/internal/app/hash"
 	"github.com/RED143/shorty/internal/app/storage"
 	"github.com/go-chi/chi/v5"
@@ -26,7 +28,13 @@ func ShortifyHandler(writer http.ResponseWriter, request *http.Request) {
 
 	writer.Header().Set("content-type", "plain/text")
 	writer.WriteHeader(http.StatusCreated)
-	writer.Write([]byte("http://localhost:8080/" + hashString[:7]))
+
+	response := config.BaseAddress + "/" + hashString[:7]
+	if !strings.Contains(config.BaseAddress, "http://") {
+		response = "http://" + response
+	}
+
+	writer.Write([]byte(response))
 }
 
 func LinkHandler(writer http.ResponseWriter, request *http.Request) {
