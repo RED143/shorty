@@ -1,7 +1,6 @@
 package server
 
 import (
-	"fmt"
 	"net/http"
 
 	"github.com/RED143/shorty/internal/app/config"
@@ -10,15 +9,13 @@ import (
 )
 
 func Start() {
-	config.InitFlags()
+	config.InitConfig()
 	router := chi.NewRouter()
 
 	router.Post("/", handlers.ShortifyHandler)
 	router.Get("/{hash}", handlers.LinkHandler)
 
 	err := http.ListenAndServe(config.GetServerAddress(), router)
-
-	fmt.Println("Server is working")
 
 	if err != nil {
 		panic(err)

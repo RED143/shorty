@@ -29,9 +29,9 @@ func ShortifyHandler(writer http.ResponseWriter, request *http.Request) {
 	writer.Header().Set("content-type", "plain/text")
 	writer.WriteHeader(http.StatusCreated)
 
-	response := config.BaseAddress + "/" + hashString[:7]
-	if !strings.Contains(config.BaseAddress, "http://") {
-		response = "http://" + response
+	response := config.BaseAddress + "/" + hashString
+	if !strings.Contains(config.BaseAddress, config.Scheme) {
+		response = config.Scheme + response
 	}
 
 	writer.Write([]byte(response))
