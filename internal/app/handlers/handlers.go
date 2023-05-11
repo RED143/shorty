@@ -45,7 +45,7 @@ func GetLink(writer http.ResponseWriter, request *http.Request) {
 	hash := chi.URLParam(request, "hash")
 	link, ok := storage.GetValue(hash)
 
-	if ok == false {
+	if !ok {
 		http.Error(writer, "Link not found", http.StatusBadRequest)
 	}
 
