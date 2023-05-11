@@ -9,7 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestShortifyHandler(t *testing.T) {
+func TestShortify(t *testing.T) {
 	tests := []struct {
 		name         string
 		method       string
@@ -40,19 +40,19 @@ func TestShortifyHandler(t *testing.T) {
 			request := httptest.NewRequest(tc.method, "/", strings.NewReader(tc.body))
 			writer := httptest.NewRecorder()
 
-			ShortifyHandler(writer, request)
+			Shortify(writer, request)
 
 			assert.Equal(t, tc.expectedCode, writer.Code, "Got code %s; expected %s", writer.Code, tc.expectedCode)
 		})
 	}
 }
 
-func TestLinkHandler(t *testing.T) {
+func TestGetLink(t *testing.T) {
 	t.Run("Should return error for non-GET request", func(t *testing.T) {
 		request := httptest.NewRequest(http.MethodPost, "/asdf", nil)
 		writer := httptest.NewRecorder()
 
-		LinkHandler(writer, request)
+		GetLink(writer, request)
 
 		assert.Equal(t, http.StatusBadRequest, writer.Code, "Got code %s; expected %s", writer.Code, http.StatusBadRequest)
 	})
@@ -61,7 +61,7 @@ func TestLinkHandler(t *testing.T) {
 		request := httptest.NewRequest(http.MethodGet, "/asdf", nil)
 		writer := httptest.NewRecorder()
 
-		LinkHandler(writer, request)
+		GetLink(writer, request)
 
 		assert.Equal(t, http.StatusBadRequest, writer.Code, "Got code %s; expected %s", writer.Code, http.StatusBadRequest)
 	})
