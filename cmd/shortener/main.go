@@ -1,7 +1,15 @@
 package main
 
-import "github.com/RED143/shorty/internal/app/server"
+import (
+	"fmt"
+	"shorty/internal/app/server"
+)
 
 func main() {
-	server.Start()
+	err := server.Start()
+
+	if err != nil {
+		fmt.Errorf("failed to start server: %w", err)
+		panic(err)
+	}
 }

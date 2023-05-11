@@ -1,6 +1,4 @@
-module github.com/RED143/shorty
-
-go 1.19
+module shorty
 
 require (
 	github.com/go-chi/chi/v5 v5.0.8

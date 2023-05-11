@@ -1,23 +1,21 @@
 package server
 
 import (
-	"net/http"
-
-	"github.com/RED143/shorty/internal/app/config"
-	"github.com/RED143/shorty/internal/app/handlers"
 	"github.com/go-chi/chi/v5"
+	"net/http"
+	"shorty/internal/app/config"
+	"shorty/internal/app/handlers"
 )
 
-func Start() {
-	config.InitConfig()
+func Start() error {
+	config.ParseFlags()
+	cfg := config.GetConfig()
 	router := chi.NewRouter()
 
-	router.Post("/", handlers.ShortifyHandler)
-	router.Get("/{hash}", handlers.LinkHandler)
+	router.Post("/", handlers.Shortify)
+	router.Get("/{hash}", handlers.GetLink)
 
-	err := http.ListenAndServe(config.GetServerAddress(), router)
+	err := http.ListenAndServe(cfg.ServerAddress, router)
 
-	if err != nil {
-		panic(err)
-	}
+	return err
 }
