@@ -1,13 +1,13 @@
 package handlers
 
 import (
-	"github.com/go-chi/chi/v5"
 	"io"
 	"net/http"
 	"net/url"
 	"shorty/internal/app/config"
 	"shorty/internal/app/hash"
 	"shorty/internal/app/storage"
+	"shorty/internal/app/util"
 )
 
 func Shortify(writer http.ResponseWriter, request *http.Request) {
@@ -42,7 +42,7 @@ func GetLink(writer http.ResponseWriter, request *http.Request) {
 		http.Error(writer, "Only GET requests are allowed", http.StatusBadRequest)
 	}
 
-	hash := chi.URLParam(request, "hash")
+	hash := util.GetRouteID(request, "hash")
 	link, ok := storage.GetValue(hash)
 
 	if !ok {
