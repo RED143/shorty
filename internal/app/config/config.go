@@ -5,27 +5,23 @@ import (
 	"os"
 )
 
-type config struct {
+type Config struct {
 	ServerAddress string
 	BaseAddress   string
 }
 
-var cfg = config{}
+func GetConfig() Config {
+	var cfg = Config{}
 
-func ParseFlags() {
-	flag.StringVar(&cfg.ServerAddress, "a", "localhost:8080", "set a server address")
-	flag.StringVar(&cfg.BaseAddress, "b", "http://localhost:8080", "set a base address")
+	flag.StringVar(&cfg.ServerAddress, "a", "localhost:8080", "server address")
+	flag.StringVar(&cfg.BaseAddress, "b", "http://localhost:8080", "base address")
 	flag.Parse()
-}
 
-func GetConfig() config {
-	envServerAddress := os.Getenv("SERVER_ADDRESS")
-	if envServerAddress != "" {
+	if envServerAddress := os.Getenv("SERVER_ADDRESS"); envServerAddress != "" {
 		cfg.ServerAddress = envServerAddress
 	}
 
-	envBaseAddress := os.Getenv("BASE_URL")
-	if envBaseAddress != "" {
+	if envBaseAddress := os.Getenv("BASE_URL"); envBaseAddress != "" {
 		cfg.BaseAddress = envBaseAddress
 	}
 
