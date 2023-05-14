@@ -1,6 +1,7 @@
 package main
 
 import (
+	"log"
 	"shorty/internal/app/server"
 )
 
@@ -8,6 +9,6 @@ func main() {
 	err := server.Start()
 
 	if err != nil {
-		panic(err)
+		log.Fatal("Closing with errorL", err)
 	}
 }

@@ -7,10 +7,9 @@ import (
 	"shorty/internal/app/config"
 	"shorty/internal/app/hash"
 	"shorty/internal/app/storage"
-	"shorty/internal/app/util"
 )
 
-func Shortify(writer http.ResponseWriter, request *http.Request) {
+func Shortify(writer http.ResponseWriter, request *http.Request, cfg config.Config) {
 	if request.Method != http.MethodPost {
 		http.Error(writer, "Only POST requests are allowed", http.StatusBadRequest)
 	}
@@ -26,23 +25,24 @@ func Shortify(writer http.ResponseWriter, request *http.Request) {
 		http.Error(writer, "URL should be provided", http.StatusBadRequest)
 	}
 
-	cfg := config.GetConfig()
 	fullURL, err := url.JoinPath(cfg.BaseAddress, hashString)
 	if err != nil {
-		http.Error(writer, "Failed to parse request body", http.StatusInternalServerError)
+		http.Error(writer, "Failed to generate path", http.StatusInternalServerError)
 	}
 
 	writer.Header().Set("content-type", "plain/text")
 	writer.WriteHeader(http.StatusCreated)
-	writer.Write([]byte(fullURL))
+	_, err = writer.Write([]byte(fullURL))
+	if err != nil {
+		http.Error(writer, "Failed to write response", http.StatusInternalServerError)
+	}
 }
 
-func GetLink(writer http.ResponseWriter, request *http.Request) {
+func GetLink(writer http.ResponseWriter, request *http.Request, hash string) {
 	if request.Method != http.MethodGet {
 		http.Error(writer, "Only GET requests are allowed", http.StatusBadRequest)
 	}
 
-	hash := util.GetRouteID(request, "hash")
 	link, ok := storage.GetValue(hash)
 
 	if !ok {

@@ -1,15 +1,17 @@
 package handlers
 
 import (
+	"github.com/stretchr/testify/assert"
 	"net/http"
 	"net/http/httptest"
+	"shorty/internal/app/config"
 	"strings"
 	"testing"
-
-	"github.com/stretchr/testify/assert"
 )
 
 func TestShortify(t *testing.T) {
+	configMock := config.Config{BaseAddress: "http://localhost:8080", ServerAddress: "localhost:8080"}
+
 	tests := []struct {
 		name         string
 		method       string
@@ -36,11 +38,12 @@ func TestShortify(t *testing.T) {
 		},
 	}
 	for _, tc := range tests {
+		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			request := httptest.NewRequest(tc.method, "/", strings.NewReader(tc.body))
 			writer := httptest.NewRecorder()
 
-			Shortify(writer, request)
+			Shortify(writer, request, configMock)
 
 			assert.Equal(t, tc.expectedCode, writer.Code, "Got code %s; expected %s", writer.Code, tc.expectedCode)
 		})
@@ -48,11 +51,12 @@ func TestShortify(t *testing.T) {
 }
 
 func TestGetLink(t *testing.T) {
+	hash := "asdf"
 	t.Run("Should return error for non-GET request", func(t *testing.T) {
 		request := httptest.NewRequest(http.MethodPost, "/asdf", nil)
 		writer := httptest.NewRecorder()
 
-		GetLink(writer, request)
+		GetLink(writer, request, hash)
 
 		assert.Equal(t, http.StatusBadRequest, writer.Code, "Got code %s; expected %s", writer.Code, http.StatusBadRequest)
 	})
@@ -61,7 +65,7 @@ func TestGetLink(t *testing.T) {
 		request := httptest.NewRequest(http.MethodGet, "/asdf", nil)
 		writer := httptest.NewRecorder()
 
-		GetLink(writer, request)
+		GetLink(writer, request, hash)
 
 		assert.Equal(t, http.StatusBadRequest, writer.Code, "Got code %s; expected %s", writer.Code, http.StatusBadRequest)
 	})
