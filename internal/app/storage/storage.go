@@ -5,13 +5,26 @@ import (
 	"sync"
 )
 
-var storage = sync.Map{}
+type storage struct {
+	mu    sync.Mutex
+	links map[string]string
+}
+
+func (c *storage) SetValue(key, value string) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.links[key] = value
+}
+
+var s = storage{
+	links: map[string]string{},
+}
 
 func SetValue(key, value string) {
-	storage.Store(key, value)
+	s.SetValue(key, value)
 }
 
 func GetValue(key string) (string, bool) {
-	value, ok := storage.Load(key)
+	value, ok := s.links[key]
 	return fmt.Sprint(value), ok
 }
