@@ -14,9 +14,10 @@ func Start() error {
 	router.Post("/", shortifyHandler(cfg))
 	router.Get("/{hash}", getLinkHandler)
 
-	err := http.ListenAndServe(cfg.ServerAddress, router)
-
-	return err
+	if err := http.ListenAndServe(cfg.ServerAddress, router); err != nil {
+		return err
+	}
+	return nil
 }
 
 func getLinkHandler(writer http.ResponseWriter, request *http.Request) {

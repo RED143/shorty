@@ -1,7 +1,6 @@
 package storage
 
 import (
-	"fmt"
 	"sync"
 )
 
@@ -10,21 +9,19 @@ type storage struct {
 	links map[string]string
 }
 
-func (c *storage) SetValue(key, value string) {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-	c.links[key] = value
-}
-
-var s = storage{
+var Storage = storage{
 	links: map[string]string{},
 }
 
-func SetValue(key, value string) {
-	s.SetValue(key, value)
+func (s *storage) Put(key, value string) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.links[key] = value
 }
 
-func GetValue(key string) (string, bool) {
-	value, ok := s.links[key]
-	return fmt.Sprint(value), ok
+func (s *storage) Get(key string) (string, bool) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	val, ok := s.links[key]
+	return val, ok
 }
