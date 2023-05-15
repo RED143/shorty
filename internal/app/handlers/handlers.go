@@ -19,7 +19,7 @@ func Shortify(writer http.ResponseWriter, request *http.Request, cfg config.Conf
 		http.Error(writer, "Failed to parse request body", http.StatusInternalServerError)
 	}
 	hashString := hash.Generate(body)
-	storage.SetValue(hashString, string(body))
+	storage.Storage.Put(hashString, string(body))
 
 	if len(body) == 0 {
 		http.Error(writer, "URL should be provided", http.StatusBadRequest)
@@ -43,7 +43,7 @@ func GetLink(writer http.ResponseWriter, request *http.Request, hash string) {
 		http.Error(writer, "Only GET requests are allowed", http.StatusBadRequest)
 	}
 
-	link, ok := storage.GetValue(hash)
+	link, ok := storage.Storage.Get(hash)
 
 	if !ok {
 		http.Error(writer, "Link not found", http.StatusBadRequest)
