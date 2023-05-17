@@ -22,6 +22,6 @@ func (s *Storage) Get(key string) (string, bool) {
 	return val, ok
 }
 
-func NewStorage() Storage {
-	return Storage{links: map[string]string{}}
+func NewStorage() *Storage {
+	return &Storage{links: map[string]string{}}
 }
