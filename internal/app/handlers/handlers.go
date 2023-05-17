@@ -19,7 +19,7 @@ func Shortify(writer http.ResponseWriter, request *http.Request, cfg config.Conf
 	body, err := io.ReadAll(request.Body)
 	if err != nil {
 		http.Error(writer, "Internal server error", http.StatusInternalServerError)
-		log.Println("failed to parse request body")
+		log.Printf("failed to parse request body: %v", err)
 		return
 	}
 	hashString := hash.Generate(body)
@@ -33,7 +33,7 @@ func Shortify(writer http.ResponseWriter, request *http.Request, cfg config.Conf
 	fullURL, err := url.JoinPath(cfg.BaseAddress, hashString)
 	if err != nil {
 		http.Error(writer, "Internal server error", http.StatusInternalServerError)
-		log.Println("failed to generate path")
+		log.Printf("failed to generate path: %v", err)
 		return
 	}
 
@@ -42,7 +42,7 @@ func Shortify(writer http.ResponseWriter, request *http.Request, cfg config.Conf
 	_, err = writer.Write([]byte(fullURL))
 	if err != nil {
 		http.Error(writer, "Internal server error", http.StatusInternalServerError)
-		log.Println("failed to write response")
+		log.Printf("failed to write response: %v", err)
 		return
 	}
 }
