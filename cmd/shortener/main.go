@@ -6,9 +6,7 @@ import (
 )
 
 func main() {
-	err := server.Start()
-
-	if err != nil {
-		log.Fatal("Closing with errorL", err)
+	if err := server.Start(); err != nil {
+		log.Fatalf("closing with error: %v", err)
 	}
 }
