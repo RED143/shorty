@@ -5,7 +5,7 @@ import (
 )
 
 type Storage struct {
-	mu    sync.Mutex
+	mu    *sync.Mutex
 	links map[string]string
 }
 
@@ -23,5 +23,8 @@ func (s *Storage) Get(key string) (string, bool) {
 }
 
 func NewStorage() *Storage {
-	return &Storage{links: map[string]string{}}
+	return &Storage{
+		links: map[string]string{},
+		mu:    &sync.Mutex{},
+	}
 }
