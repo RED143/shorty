@@ -5,12 +5,14 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"shorty/internal/app/config"
+	"shorty/internal/app/storage"
 	"strings"
 	"testing"
 )
 
 func TestShortify(t *testing.T) {
 	configMock := config.Config{BaseAddress: "http://localhost:8080", ServerAddress: "localhost:8080"}
+	storageMock := storage.NewStorage()
 
 	tests := []struct {
 		name         string
@@ -43,7 +45,7 @@ func TestShortify(t *testing.T) {
 			request := httptest.NewRequest(tc.method, "/", strings.NewReader(tc.body))
 			writer := httptest.NewRecorder()
 
-			Shortify(writer, request, configMock)
+			Shortify(writer, request, configMock, storageMock)
 
 			assert.Equal(t, tc.expectedCode, writer.Code, "Got code %s; expected %s", writer.Code, tc.expectedCode)
 		})
@@ -51,12 +53,13 @@ func TestShortify(t *testing.T) {
 }
 
 func TestGetLink(t *testing.T) {
+	storageMock := storage.NewStorage()
 	hash := "asdf"
 	t.Run("Should return error for non-GET request", func(t *testing.T) {
 		request := httptest.NewRequest(http.MethodPost, "/asdf", nil)
 		writer := httptest.NewRecorder()
 
-		GetLink(writer, request, hash)
+		GetLink(writer, request, hash, storageMock)
 
 		assert.Equal(t, http.StatusBadRequest, writer.Code, "Got code %s; expected %s", writer.Code, http.StatusBadRequest)
 	})
@@ -65,7 +68,7 @@ func TestGetLink(t *testing.T) {
 		request := httptest.NewRequest(http.MethodGet, "/asdf", nil)
 		writer := httptest.NewRecorder()
 
-		GetLink(writer, request, hash)
+		GetLink(writer, request, hash, storageMock)
 
 		assert.Equal(t, http.StatusBadRequest, writer.Code, "Got code %s; expected %s", writer.Code, http.StatusBadRequest)
 	})
