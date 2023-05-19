@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"shorty/internal/app/config"
 	"shorty/internal/app/handlers"
+	"shorty/internal/app/logger"
 	"shorty/internal/app/storage"
 )
 
@@ -12,10 +13,12 @@ func Start() error {
 	cfg := config.GetConfig()
 	router := chi.NewRouter()
 	str := storage.NewStorage()
+	logger.Initialize()
 
-	router.Post("/", shortifyHandler(cfg, str))
-	router.Get("/{hash}", getLinkHandler(str))
+	router.Post("/", logger.WithLogging(shortifyHandler(cfg, str)))
+	router.Get("/{hash}", logger.WithLogging(getLinkHandler(str)))
 
+	logger.Info("Starting server", "address", cfg.ServerAddress)
 	if err := http.ListenAndServe(cfg.ServerAddress, router); err != nil {
 		return err
 	}
