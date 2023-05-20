@@ -9,31 +9,31 @@ import (
 	"shorty/internal/app/storage"
 )
 
+type handler struct {
+	config  config.Config
+	storage *storage.Storage
+}
+
 func Start() error {
-	cfg := config.GetConfig()
+	h := handler{storage: storage.NewStorage(), config: config.GetConfig()}
 	router := chi.NewRouter()
-	str := storage.NewStorage()
 	logger.Initialize()
 
-	router.Post("/", logger.WithLogging(shortifyHandler(cfg, str)))
-	router.Get("/{hash}", logger.WithLogging(getLinkHandler(str)))
+	router.Post("/", logger.WithLogging(h.shortifyHandler))
+	router.Get("/{hash}", logger.WithLogging(h.getLinkHandler))
 
-	logger.Info("Starting server", "address", cfg.ServerAddress)
-	if err := http.ListenAndServe(cfg.ServerAddress, router); err != nil {
+	logger.Info("Starting server", "address", h.config.ServerAddress)
+	if err := http.ListenAndServe(h.config.ServerAddress, router); err != nil {
 		return err
 	}
 	return nil
 }
 
-func getLinkHandler(str *storage.Storage) http.HandlerFunc {
-	return func(writer http.ResponseWriter, request *http.Request) {
-		hash := chi.URLParam(request, "hash")
-		handlers.GetLink(writer, request, hash, str)
-	}
+func (h *handler) getLinkHandler(writer http.ResponseWriter, request *http.Request) {
+	hash := chi.URLParam(request, "hash")
+	handlers.GetLink(writer, request, hash, h.storage)
 }
 
-func shortifyHandler(config config.Config, str *storage.Storage) http.HandlerFunc {
-	return func(writer http.ResponseWriter, request *http.Request) {
-		handlers.Shortify(writer, request, config, str)
-	}
+func (h *handler) shortifyHandler(writer http.ResponseWriter, request *http.Request) {
+	handlers.Shortify(writer, request, h.config, h.storage)
 }
