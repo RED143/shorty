@@ -73,3 +73,17 @@ func TestGetLink(t *testing.T) {
 		assert.Equal(t, http.StatusBadRequest, writer.Code, "Got code %s; expected %s", writer.Code, http.StatusBadRequest)
 	})
 }
+
+func TestShortenLink(t *testing.T) {
+	configMock := config.Config{BaseAddress: "http://localhost:8080", ServerAddress: "localhost:8080"}
+	storageMock := storage.NewStorage()
+
+	t.Run("Should return error for non-POST request", func(t *testing.T) {
+		request := httptest.NewRequest(http.MethodGet, "/shorten", nil)
+		writer := httptest.NewRecorder()
+
+		ShortenLink(writer, request, configMock, storageMock)
+
+		assert.Equal(t, http.StatusBadRequest, writer.Code, "Got code %s; expected %s", writer.Code, http.StatusBadRequest)
+	})
+}
