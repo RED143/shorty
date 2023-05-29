@@ -3,6 +3,7 @@ package server
 import (
 	"github.com/go-chi/chi/v5"
 	"net/http"
+	"shorty/internal/app/compress"
 	"shorty/internal/app/config"
 	"shorty/internal/app/handlers"
 	"shorty/internal/app/logger"
@@ -32,9 +33,9 @@ func Start() error {
 	router := chi.NewRouter()
 	logger.Initialize()
 
-	router.Post("/", logger.WithLogging(h.shortifyLink))
-	router.Post("/api/shorten", logger.WithLogging(h.shortenLink))
-	router.Get("/{hash}", logger.WithLogging(h.getLink))
+	router.Post("/", logger.WithLogging(compress.CompressMiddleware(h.shortifyLink)))
+	router.Post("/api/shorten", logger.WithLogging(compress.CompressMiddleware(h.shortenLink)))
+	router.Get("/{hash}", logger.WithLogging(compress.CompressMiddleware(h.getLink)))
 
 	logger.Info("Starting server", "address", h.config.ServerAddress)
 	if err := http.ListenAndServe(h.config.ServerAddress, router); err != nil {
