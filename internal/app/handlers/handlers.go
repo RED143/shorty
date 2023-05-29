@@ -3,11 +3,11 @@ package handlers
 import (
 	"encoding/json"
 	"io"
-	"log"
 	"net/http"
 	"net/url"
 	"shorty/internal/app/config"
 	"shorty/internal/app/hash"
+	"shorty/internal/app/logger"
 	"shorty/internal/app/models"
 	"shorty/internal/app/storage"
 )
@@ -21,7 +21,7 @@ func Shortify(writer http.ResponseWriter, request *http.Request, cfg config.Conf
 	body, err := io.ReadAll(request.Body)
 	if err != nil {
 		http.Error(writer, "Internal server error", http.StatusInternalServerError)
-		log.Printf("failed to parse request body: %v", err)
+		logger.Debug("failed to parse request body", "err", err)
 		return
 	}
 
@@ -36,7 +36,7 @@ func Shortify(writer http.ResponseWriter, request *http.Request, cfg config.Conf
 	fullURL, err := url.JoinPath(cfg.BaseAddress, hashString)
 	if err != nil {
 		http.Error(writer, "Internal server error", http.StatusInternalServerError)
-		log.Printf("failed to generate path: %v", err)
+		logger.Debug("failed to generate path", "err", err)
 		return
 	}
 
@@ -45,7 +45,7 @@ func Shortify(writer http.ResponseWriter, request *http.Request, cfg config.Conf
 	_, err = writer.Write([]byte(fullURL))
 	if err != nil {
 		http.Error(writer, "Internal server error", http.StatusInternalServerError)
-		log.Printf("failed to write response: %v", err)
+		logger.Debug("failed to write response", "err", err)
 		return
 	}
 }
@@ -77,7 +77,7 @@ func ShortenLink(writer http.ResponseWriter, request *http.Request, cfg config.C
 	dec := json.NewDecoder(request.Body)
 	if err := dec.Decode(&req); err != nil {
 		http.Error(writer, "Internal server error", http.StatusInternalServerError)
-		log.Printf("cannot decode request JSON body: %v", err)
+		logger.Debug("cannot decode request JSON body", "err", err)
 		return
 	}
 
@@ -92,7 +92,7 @@ func ShortenLink(writer http.ResponseWriter, request *http.Request, cfg config.C
 	result, err := url.JoinPath(cfg.BaseAddress, hashString)
 	if err != nil {
 		http.Error(writer, "Internal server error", http.StatusInternalServerError)
-		log.Printf("failed to generate path: %v", err)
+		logger.Debug("failed to generate path", "err", err)
 		return
 	}
 
@@ -103,7 +103,7 @@ func ShortenLink(writer http.ResponseWriter, request *http.Request, cfg config.C
 	enc := json.NewEncoder(writer)
 	if err := enc.Encode(resp); err != nil {
 		http.Error(writer, "Internal server error", http.StatusInternalServerError)
-		log.Printf("error encoding response: %v", err)
+		logger.Debug("error encoding response", "err", err)
 		return
 	}
 }

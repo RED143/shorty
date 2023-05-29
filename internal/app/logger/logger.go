@@ -46,6 +46,10 @@ func Info(msg string, fields ...interface{}) {
 	sugar.Infow(msg, fields...)
 }
 
+func Debug(msg string, fields ...interface{}) {
+	sugar.Debugw(msg, fields...)
+}
+
 func WithLogging(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
