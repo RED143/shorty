@@ -1,10 +1,13 @@
 package handlers
 
 import (
+	"bytes"
+	"encoding/json"
 	"github.com/stretchr/testify/assert"
 	"net/http"
 	"net/http/httptest"
 	"shorty/internal/app/config"
+	"shorty/internal/app/models"
 	"shorty/internal/app/storage"
 	"strings"
 	"testing"
@@ -80,6 +83,17 @@ func TestShortenLink(t *testing.T) {
 
 	t.Run("Should return error for non-POST request", func(t *testing.T) {
 		request := httptest.NewRequest(http.MethodGet, "/shorten", nil)
+		writer := httptest.NewRecorder()
+
+		ShortenLink(writer, request, configMock, storageMock)
+
+		assert.Equal(t, http.StatusBadRequest, writer.Code, "Got code %s; expected %s", writer.Code, http.StatusBadRequest)
+	})
+
+	t.Run("Should return error if url not provided", func(t *testing.T) {
+		data := models.ShortenRequest{URL: ""}
+		reqData, _ := json.Marshal(data)
+		request := httptest.NewRequest(http.MethodPost, "/shorten", bytes.NewReader(reqData))
 		writer := httptest.NewRecorder()
 
 		ShortenLink(writer, request, configMock, storageMock)
