@@ -3,29 +3,34 @@ package storage
 import (
 	"bufio"
 	"encoding/json"
-	"log"
 	"os"
+	"path/filepath"
 	"strconv"
 	"sync"
 )
 
 type Storage struct {
 	mu       *sync.Mutex
+	links    map[string]string
 	filePath string
 }
 
 type Line struct {
 	UUID        string `json:"uuid"`
-	ShortUrl    string `json:"short_url"`
-	OriginalUrl string `json:"original_url"`
+	ShortURL    string `json:"short_url"`
+	OriginalURL string `json:"original_url"`
 }
 
-func (s *Storage) Put(key, value string) {
+func (s *Storage) Put(key, value string) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	file, err := os.OpenFile(s.filePath, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+	if s.filePath == "" {
+		s.links[key] = value
+		return nil
+	}
+	file, err := os.OpenFile(s.filePath, os.O_RDWR|os.O_APPEND, 0666)
 	if err != nil {
-		log.Fatalf("failed to open storage file: %v", err)
+		return err
 	}
 	defer file.Close()
 
@@ -36,56 +41,66 @@ func (s *Storage) Put(key, value string) {
 	for scanner.Scan() {
 		line := Line{}
 		if err := json.Unmarshal(scanner.Bytes(), &line); err != nil {
-			log.Fatalf("failed to read json line: %v", err)
+			return err
 		}
-		if line.ShortUrl == key {
+		if line.ShortURL == key {
 			isAlreadySaved = true
 		}
 		countLines++
 	}
 
 	if isAlreadySaved {
-		return
+		return nil
 	}
 
-	line := Line{UUID: strconv.Itoa(countLines + 1), ShortUrl: key, OriginalUrl: value}
+	line := Line{UUID: strconv.Itoa(countLines + 1), ShortURL: key, OriginalURL: value}
 	data, err := json.Marshal(&line)
 	if err != nil {
-		log.Fatalf("failed format data to json format: %v", err)
+		return err
 	}
 	data = append(data, '\n')
 
 	_, err = file.Write(data)
 	if err != nil {
-		log.Fatalf("failed to write in file: %v", err)
+		return err
 	}
+
+	return nil
 }
 
-func (s *Storage) Get(key string) (string, bool) {
+func (s *Storage) Get(key string) (string, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	file, err := os.OpenFile(s.filePath, os.O_RDONLY|os.O_CREATE, 0666)
+	if s.filePath == "" {
+		val := s.links[key]
+		return val, nil
+	}
+	file, err := os.OpenFile(s.filePath, os.O_RDONLY, 0666)
 	if err != nil {
-		log.Fatalf("failed to open storage file: %v", err)
+		return "", err
 	}
 	defer file.Close()
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
 		line := Line{}
 		if err := json.Unmarshal(scanner.Bytes(), &line); err != nil {
-			log.Fatalf("failed to read json line: %v", err)
+			return "", err
 		}
-		if line.ShortUrl == key {
-			return line.OriginalUrl, true
-			break
+		if line.ShortURL == key {
+			return line.OriginalURL, nil
 		}
 	}
-	return "", false
+	return "", nil
 }
 
 func NewStorage(fileStoragePath string) *Storage {
+	if _, err := os.Stat(fileStoragePath); os.IsNotExist(err) && fileStoragePath != "" {
+		os.MkdirAll(filepath.Dir(fileStoragePath), 0666)
+		os.Create(fileStoragePath)
+	}
 	return &Storage{
 		filePath: fileStoragePath,
+		links:    map[string]string{},
 		mu:       &sync.Mutex{},
 	}
 }

@@ -31,7 +31,11 @@ func Shortify(writer http.ResponseWriter, request *http.Request, cfg config.Conf
 	}
 
 	hashString := hash.Generate(body)
-	str.Put(hashString, string(body))
+	if err := str.Put(hashString, string(body)); err != nil {
+		http.Error(writer, "Internal server error", http.StatusInternalServerError)
+		logger.Debug("failed to get origin url", "err", err)
+		return
+	}
 
 	fullURL, err := url.JoinPath(cfg.BaseAddress, hashString)
 	if err != nil {
@@ -56,9 +60,15 @@ func GetLink(writer http.ResponseWriter, request *http.Request, hash string, str
 		return
 	}
 
-	link, ok := str.Get(hash)
+	link, err := str.Get(hash)
 
-	if !ok {
+	if err != nil {
+		http.Error(writer, "Internal server error", http.StatusInternalServerError)
+		logger.Debug("failed to write response", "err", err)
+		return
+	}
+
+	if link == "" {
 		http.Error(writer, "Link not found", http.StatusBadRequest)
 		return
 	}

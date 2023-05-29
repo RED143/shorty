@@ -28,7 +28,7 @@ func GetConfig() Config {
 	}
 
 	if envFileStoragePath := os.Getenv("FILE_STORAGE_PATH"); envFileStoragePath != "" {
-		cfg.BaseAddress = envFileStoragePath
+		cfg.FileStoragePath = envFileStoragePath
 	}
 
 	return cfg

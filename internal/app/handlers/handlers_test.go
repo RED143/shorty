@@ -6,6 +6,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"path/filepath"
 	"shorty/internal/app/config"
 	"shorty/internal/app/models"
 	"shorty/internal/app/storage"
@@ -13,9 +15,22 @@ import (
 	"testing"
 )
 
+func getStoragePath(t *testing.T) string {
+	dir, err := os.Getwd()
+	if err != nil {
+		t.Error("failed to get current path")
+	}
+	return filepath.Join(dir, "test.json")
+}
+
+func deleteStorageFile(t *testing.T) {
+	os.Remove(getStoragePath(t))
+}
+
 func TestShortify(t *testing.T) {
 	configMock := config.Config{BaseAddress: "http://localhost:8080", ServerAddress: "localhost:8080"}
-	storageMock := storage.NewStorage()
+	storageMock := storage.NewStorage(getStoragePath(t))
+	defer deleteStorageFile(t)
 
 	tests := []struct {
 		name         string
@@ -56,8 +71,10 @@ func TestShortify(t *testing.T) {
 }
 
 func TestGetLink(t *testing.T) {
-	storageMock := storage.NewStorage()
 	hash := "asdf"
+	storageMock := storage.NewStorage(getStoragePath(t))
+	defer deleteStorageFile(t)
+
 	t.Run("Should return error for non-GET request", func(t *testing.T) {
 		request := httptest.NewRequest(http.MethodPost, "/asdf", nil)
 		writer := httptest.NewRecorder()
@@ -79,7 +96,8 @@ func TestGetLink(t *testing.T) {
 
 func TestShortenLink(t *testing.T) {
 	configMock := config.Config{BaseAddress: "http://localhost:8080", ServerAddress: "localhost:8080"}
-	storageMock := storage.NewStorage()
+	storageMock := storage.NewStorage(getStoragePath(t))
+	defer deleteStorageFile(t)
 
 	t.Run("Should return error for non-POST request", func(t *testing.T) {
 		request := httptest.NewRequest(http.MethodGet, "/shorten", nil)
