@@ -12,7 +12,7 @@ import (
 	"shorty/internal/app/storage"
 )
 
-func Shortify(writer http.ResponseWriter, request *http.Request, cfg config.Config, str *storage.Storage) {
+func Shortify(writer http.ResponseWriter, request *http.Request, cfg config.Config, str storage.Storage) {
 	if request.Method != http.MethodPost {
 		http.Error(writer, "Only POST requests are allowed", http.StatusBadRequest)
 		return
@@ -54,7 +54,7 @@ func Shortify(writer http.ResponseWriter, request *http.Request, cfg config.Conf
 	}
 }
 
-func GetLink(writer http.ResponseWriter, request *http.Request, hash string, str *storage.Storage) {
+func GetLink(writer http.ResponseWriter, request *http.Request, hash string, str storage.Storage) {
 	if request.Method != http.MethodGet {
 		http.Error(writer, "Only GET requests are allowed", http.StatusBadRequest)
 		return
@@ -77,7 +77,7 @@ func GetLink(writer http.ResponseWriter, request *http.Request, hash string, str
 	writer.WriteHeader(http.StatusTemporaryRedirect)
 }
 
-func ShortenLink(writer http.ResponseWriter, request *http.Request, cfg config.Config, str *storage.Storage) {
+func ShortenLink(writer http.ResponseWriter, request *http.Request, cfg config.Config, str storage.Storage) {
 	if request.Method != http.MethodPost {
 		http.Error(writer, "Only POST requests are allowed", http.StatusBadRequest)
 		return
