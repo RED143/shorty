@@ -29,7 +29,8 @@ func (h *handler) shortenLink(writer http.ResponseWriter, request *http.Request)
 }
 
 func Start() error {
-	h := handler{storage: storage.NewStorage(), config: config.GetConfig()}
+	c := config.GetConfig()
+	h := handler{storage: storage.NewStorage(c.FileStoragePath), config: c}
 	router := chi.NewRouter()
 	logger.Initialize()
 
