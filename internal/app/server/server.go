@@ -12,7 +12,7 @@ import (
 
 type handler struct {
 	config  config.Config
-	storage *storage.Storage
+	storage storage.Storage
 }
 
 func (h *handler) getLink(writer http.ResponseWriter, request *http.Request) {
