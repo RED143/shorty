@@ -1,7 +1,6 @@
 package logger
 
 import (
-	"log"
 	"net/http"
 	"time"
 
@@ -31,27 +30,19 @@ func (r *loggingResponseWriter) WriteHeader(statusCode int) {
 	r.responseData.status = statusCode
 }
 
-var sugar *zap.SugaredLogger
+type Logger = *zap.SugaredLogger
 
-func Initialize() {
+func Initialize() (Logger, error) {
 	logger, err := zap.NewDevelopment()
 	if err != nil {
-		log.Fatalf("can't initialize logger: %v", err)
+		return nil, err
 	}
 	defer logger.Sync()
-	sugar = logger.Sugar()
+	return logger.Sugar(), nil
 }
 
-func Info(msg string, fields ...interface{}) {
-	sugar.Infow(msg, fields...)
-}
-
-func Debug(msg string, fields ...interface{}) {
-	sugar.Debugw(msg, fields...)
-}
-
-func WithLogging(h http.HandlerFunc) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
+func WithLogging(h http.Handler, logger Logger) http.Handler {
+	logFn := func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
 
 		responseData := &responseData{
@@ -66,16 +57,16 @@ func WithLogging(h http.HandlerFunc) http.HandlerFunc {
 
 		duration := time.Since(start)
 
-		Info("Request",
+		logger.Infow("Request",
 			"uri", r.RequestURI,
 			"method", r.Method,
 			"duration", duration,
 		)
 
-		Info("Response",
+		logger.Infow("Response",
 			"status", responseData.status,
 			"size", responseData.size,
 		)
-
 	}
+	return http.HandlerFunc(logFn)
 }
