@@ -12,7 +12,7 @@ import (
 
 type handler struct {
 	config  config.Config
-	storage storage.Storage
+	storage *storage.Storage
 	logger  logger.Logger
 }
 
@@ -37,22 +37,26 @@ func (m *middleware) withLogging(h http.Handler) http.Handler {
 	return logger.WithLogging(h, m.logger)
 }
 
-func (m *middleware) WithCompressing(h http.Handler) http.Handler {
+func (m *middleware) withCompressing(h http.Handler) http.Handler {
 	return compress.WithCompressing(h, m.logger)
 }
 
 func Start() error {
 	logger, err := logger.Initialize()
-	c := config.GetConfig()
-	h := handler{storage: storage.NewStorage(c.FileStoragePath), config: c, logger: logger}
-	m := middleware{logger: logger}
-	router := chi.NewRouter()
 	if err != nil {
 		return err
 	}
+	c := config.GetConfig()
+	s, err := storage.NewStorage(c.FileStoragePath)
+	if err != nil {
+		return err
+	}
+	h := handler{storage: s, config: c, logger: logger}
+	m := middleware{logger: logger}
+	router := chi.NewRouter()
 
 	router.Use(m.withLogging)
-	router.Use(m.WithCompressing)
+	router.Use(m.withCompressing)
 
 	router.Post("/", h.shortifyLink)
 	router.Post("/api/shorten", h.shortenLink)

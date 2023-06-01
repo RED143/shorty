@@ -21,7 +21,7 @@ func (l loggerMock) Infow(template string, args ...interface{}) {}
 
 func TestShortify(t *testing.T) {
 	configMock := config.Config{BaseAddress: "http://localhost:8080", ServerAddress: "localhost:8080"}
-	storageMock := storage.NewStorage("")
+	storageMock, _ := storage.NewStorage("")
 	loggerMock := loggerMock{}
 
 	tests := []struct {
@@ -63,7 +63,7 @@ func TestShortify(t *testing.T) {
 }
 
 func TestGetLink(t *testing.T) {
-	storageMock := storage.NewStorage("")
+	storageMock, _ := storage.NewStorage("")
 	loggerMock := loggerMock{}
 	hash := "asdf"
 
@@ -88,7 +88,7 @@ func TestGetLink(t *testing.T) {
 
 func TestShortenLink(t *testing.T) {
 	configMock := config.Config{BaseAddress: "http://localhost:8080", ServerAddress: "localhost:8080"}
-	storageMock := storage.NewStorage("")
+	storageMock, _ := storage.NewStorage("")
 	loggerMock := loggerMock{}
 
 	t.Run("Should return error for non-POST request", func(t *testing.T) {
