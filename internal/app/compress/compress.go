@@ -67,8 +67,8 @@ func (c *compressReader) Close() error {
 	return c.zr.Close()
 }
 
-func CompressMiddleware(h http.HandlerFunc) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
+func WithCompressing(h http.Handler, logger logger.Logger) http.Handler {
+	compressMiddleware := func(w http.ResponseWriter, r *http.Request) {
 		ow := w
 		acceptEncoding := r.Header.Get("Accept-Encoding")
 		supportsGzip := strings.Contains(acceptEncoding, "gzip")
@@ -93,4 +93,6 @@ func CompressMiddleware(h http.HandlerFunc) http.HandlerFunc {
 
 		h.ServeHTTP(ow, r)
 	}
+
+	return http.HandlerFunc(compressMiddleware)
 }
