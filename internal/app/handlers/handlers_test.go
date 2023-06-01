@@ -13,9 +13,16 @@ import (
 	"testing"
 )
 
+type loggerMock struct{}
+
+func (l loggerMock) Errorw(template string, args ...interface{}) {}
+
+func (l loggerMock) Infow(template string, args ...interface{}) {}
+
 func TestShortify(t *testing.T) {
 	configMock := config.Config{BaseAddress: "http://localhost:8080", ServerAddress: "localhost:8080"}
 	storageMock := storage.NewStorage("")
+	loggerMock := loggerMock{}
 
 	tests := []struct {
 		name         string
@@ -48,7 +55,7 @@ func TestShortify(t *testing.T) {
 			request := httptest.NewRequest(tc.method, "/", strings.NewReader(tc.body))
 			writer := httptest.NewRecorder()
 
-			Shortify(writer, request, configMock, storageMock)
+			Shortify(writer, request, configMock, storageMock, loggerMock)
 
 			assert.Equal(t, tc.expectedCode, writer.Code, "Got code %s; expected %s", writer.Code, tc.expectedCode)
 		})
@@ -57,12 +64,14 @@ func TestShortify(t *testing.T) {
 
 func TestGetLink(t *testing.T) {
 	storageMock := storage.NewStorage("")
+	loggerMock := loggerMock{}
 	hash := "asdf"
+
 	t.Run("Should return error for non-GET request", func(t *testing.T) {
 		request := httptest.NewRequest(http.MethodPost, "/asdf", nil)
 		writer := httptest.NewRecorder()
 
-		GetLink(writer, request, hash, storageMock)
+		GetLink(writer, request, hash, storageMock, loggerMock)
 
 		assert.Equal(t, http.StatusBadRequest, writer.Code, "Got code %s; expected %s", writer.Code, http.StatusBadRequest)
 	})
@@ -71,7 +80,7 @@ func TestGetLink(t *testing.T) {
 		request := httptest.NewRequest(http.MethodGet, "/asdf", nil)
 		writer := httptest.NewRecorder()
 
-		GetLink(writer, request, hash, storageMock)
+		GetLink(writer, request, hash, storageMock, loggerMock)
 
 		assert.Equal(t, http.StatusBadRequest, writer.Code, "Got code %s; expected %s", writer.Code, http.StatusBadRequest)
 	})
@@ -80,12 +89,13 @@ func TestGetLink(t *testing.T) {
 func TestShortenLink(t *testing.T) {
 	configMock := config.Config{BaseAddress: "http://localhost:8080", ServerAddress: "localhost:8080"}
 	storageMock := storage.NewStorage("")
+	loggerMock := loggerMock{}
 
 	t.Run("Should return error for non-POST request", func(t *testing.T) {
 		request := httptest.NewRequest(http.MethodGet, "/shorten", nil)
 		writer := httptest.NewRecorder()
 
-		ShortenLink(writer, request, configMock, storageMock)
+		ShortenLink(writer, request, configMock, storageMock, loggerMock)
 
 		assert.Equal(t, http.StatusBadRequest, writer.Code, "Got code %s; expected %s", writer.Code, http.StatusBadRequest)
 	})
@@ -96,7 +106,7 @@ func TestShortenLink(t *testing.T) {
 		request := httptest.NewRequest(http.MethodPost, "/shorten", bytes.NewReader(reqData))
 		writer := httptest.NewRecorder()
 
-		ShortenLink(writer, request, configMock, storageMock)
+		ShortenLink(writer, request, configMock, storageMock, loggerMock)
 
 		assert.Equal(t, http.StatusBadRequest, writer.Code, "Got code %s; expected %s", writer.Code, http.StatusBadRequest)
 	})
