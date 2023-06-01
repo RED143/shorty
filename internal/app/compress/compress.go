@@ -84,7 +84,7 @@ func WithCompressing(h http.Handler, logger logger.Logger) http.Handler {
 			cr, err := newCompressReader(r.Body)
 			if err != nil {
 				w.WriteHeader(http.StatusInternalServerError)
-				logger.Debug("Failed to compress data")
+				logger.Errorw("Failed to compress data")
 				return
 			}
 			r.Body = cr
