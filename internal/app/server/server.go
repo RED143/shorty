@@ -1,20 +1,24 @@
 package server
 
 import (
-	"github.com/go-chi/chi/v5"
-	"go.uber.org/zap"
+	"database/sql"
 	"net/http"
 	"shorty/internal/app/compress"
 	"shorty/internal/app/config"
 	"shorty/internal/app/handlers"
 	"shorty/internal/app/logger"
 	"shorty/internal/app/storage"
+
+	"github.com/go-chi/chi/v5"
+	_ "github.com/jackc/pgx/v5/stdlib"
+	"go.uber.org/zap"
 )
 
 type handler struct {
 	config  config.Config
 	storage *storage.Storage
 	logger  *zap.SugaredLogger
+	db      *sql.DB
 }
 
 func (h *handler) getLink(writer http.ResponseWriter, request *http.Request) {
@@ -28,6 +32,10 @@ func (h *handler) shortifyLink(writer http.ResponseWriter, request *http.Request
 
 func (h *handler) shortenLink(writer http.ResponseWriter, request *http.Request) {
 	handlers.ShortenLink(writer, request, h.config, h.storage, h.logger)
+}
+
+func (h *handler) checkDatabaseConnection(writer http.ResponseWriter, request *http.Request) {
+	handlers.CheckDatabaseConnection(writer, request, h.db, h.logger)
 }
 
 type middleware struct {
@@ -52,8 +60,14 @@ func Start() error {
 	if err != nil {
 		return err
 	}
-	h := handler{storage: s, config: c, logger: logger}
+	db, err := sql.Open("pgx", c.DatabaseDSN)
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+	h := handler{storage: s, config: c, logger: logger, db: db}
 	m := middleware{logger: logger}
+
 	router := chi.NewRouter()
 
 	router.Use(m.withLogging)
@@ -61,10 +75,11 @@ func Start() error {
 
 	router.Post("/", h.shortifyLink)
 	router.Post("/api/shorten", h.shortenLink)
+	router.Get("/ping", h.checkDatabaseConnection)
 	router.Get("/{hash}", h.getLink)
 
-	logger.Infow("Starting server", "address", h.config.ServerAddress)
-	if err := http.ListenAndServe(h.config.ServerAddress, router); err != nil {
+	logger.Infow("Starting server", "address", c.ServerAddress)
+	if err := http.ListenAndServe(c.ServerAddress, router); err != nil {
 		return err
 	}
 	return nil

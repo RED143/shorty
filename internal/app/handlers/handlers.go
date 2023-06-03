@@ -1,6 +1,8 @@
 package handlers
 
 import (
+	"context"
+	"database/sql"
 	"encoding/json"
 	"go.uber.org/zap"
 	"io"
@@ -10,6 +12,7 @@ import (
 	"shorty/internal/app/hash"
 	"shorty/internal/app/models"
 	"shorty/internal/app/storage"
+	"time"
 )
 
 func Shortify(writer http.ResponseWriter, request *http.Request, cfg config.Config, str *storage.Storage, logger *zap.SugaredLogger) {
@@ -116,4 +119,21 @@ func ShortenLink(writer http.ResponseWriter, request *http.Request, cfg config.C
 		logger.Errorw("error encoding response", "err", err)
 		return
 	}
+}
+
+func CheckDatabaseConnection(writer http.ResponseWriter, request *http.Request, db *sql.DB, logger *zap.SugaredLogger) {
+	if request.Method != http.MethodGet {
+		http.Error(writer, "Only GET requests are allowed", http.StatusBadRequest)
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+	defer cancel()
+	if err := db.PingContext(ctx); err != nil {
+		http.Error(writer, "Internal server error", http.StatusInternalServerError)
+		logger.Errorw("Failed to connect database", "err", err)
+		return
+	}
+
+	writer.WriteHeader(http.StatusOK)
 }
