@@ -30,10 +30,7 @@ func (r *loggingResponseWriter) WriteHeader(statusCode int) {
 	r.responseData.status = statusCode
 }
 
-type Logger = interface {
-	Infow(template string, args ...interface{})
-	Errorw(template string, args ...interface{})
-}
+type Logger = *zap.SugaredLogger
 
 func Initialize() (Logger, error) {
 	logger, err := zap.NewDevelopment()
