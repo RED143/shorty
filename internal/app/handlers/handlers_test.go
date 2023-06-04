@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/zap/zaptest"
 	"net/http"
 	"net/http/httptest"
 	"shorty/internal/app/config"
@@ -13,16 +14,10 @@ import (
 	"testing"
 )
 
-type loggerMock struct{}
-
-func (l loggerMock) Errorw(template string, args ...interface{}) {}
-
-func (l loggerMock) Infow(template string, args ...interface{}) {}
-
 func TestShortify(t *testing.T) {
 	configMock := config.Config{BaseAddress: "http://localhost:8080", ServerAddress: "localhost:8080"}
 	storageMock, _ := storage.NewStorage("")
-	loggerMock := loggerMock{}
+	loggerMock := zaptest.NewLogger(t).Sugar()
 
 	tests := []struct {
 		name         string
@@ -64,7 +59,7 @@ func TestShortify(t *testing.T) {
 
 func TestGetLink(t *testing.T) {
 	storageMock, _ := storage.NewStorage("")
-	loggerMock := loggerMock{}
+	loggerMock := zaptest.NewLogger(t).Sugar()
 	hash := "asdf"
 
 	t.Run("Should return error for non-GET request", func(t *testing.T) {
@@ -89,7 +84,7 @@ func TestGetLink(t *testing.T) {
 func TestShortenLink(t *testing.T) {
 	configMock := config.Config{BaseAddress: "http://localhost:8080", ServerAddress: "localhost:8080"}
 	storageMock, _ := storage.NewStorage("")
-	loggerMock := loggerMock{}
+	loggerMock := zaptest.NewLogger(t).Sugar()
 
 	t.Run("Should return error for non-POST request", func(t *testing.T) {
 		request := httptest.NewRequest(http.MethodGet, "/shorten", nil)
