@@ -3,8 +3,8 @@ package storage
 import (
 	"bufio"
 	"encoding/json"
+	"fmt"
 	"os"
-	"strconv"
 	"sync"
 )
 
@@ -15,12 +15,9 @@ type Storage struct {
 }
 
 type fileLine struct {
-	UUID        string `json:"uuid"`
 	ShortURL    string `json:"short_url"`
 	OriginalURL string `json:"original_url"`
 }
-
-var linesCount = 0
 
 func (s *Storage) Put(key, value string) error {
 	s.mu.Lock()
@@ -31,7 +28,6 @@ func (s *Storage) Put(key, value string) error {
 		if err := s.saveURLToFile(key, value); err != nil {
 			return err
 		}
-		linesCount++
 	}
 
 	return nil
@@ -47,7 +43,7 @@ func (s *Storage) Get(key string) (string, error) {
 func (s *Storage) mapURLsFromFileToStorage() error {
 	file, err := os.OpenFile(s.filePath, os.O_RDONLY|os.O_CREATE, 0666)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to open the file \"%s\": %w", s.filePath, err)
 	}
 	defer file.Close()
 
@@ -55,9 +51,8 @@ func (s *Storage) mapURLsFromFileToStorage() error {
 	for scanner.Scan() {
 		line := fileLine{}
 		if err := json.Unmarshal(scanner.Bytes(), &line); err != nil {
-			return err
+			return fmt.Errorf("failed to decode json: %w", err)
 		}
-		linesCount++
 		s.links[line.ShortURL] = line.OriginalURL
 	}
 
@@ -67,20 +62,20 @@ func (s *Storage) mapURLsFromFileToStorage() error {
 func (s *Storage) saveURLToFile(key, value string) error {
 	file, err := os.OpenFile(s.filePath, os.O_WRONLY|os.O_APPEND, 0666)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to open the file \"%s\": %w", s.filePath, err)
 	}
 	defer file.Close()
 
-	line := fileLine{UUID: strconv.Itoa(linesCount + 1), ShortURL: key, OriginalURL: value}
+	line := fileLine{ShortURL: key, OriginalURL: value}
 	data, err := json.Marshal(&line)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to encode json: %w", err)
 	}
 	data = append(data, '\n')
 
 	_, err = file.Write(data)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to save data to file: %w", err)
 	}
 
 	return nil
