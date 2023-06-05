@@ -2,9 +2,9 @@ package compress
 
 import (
 	"compress/gzip"
+	"go.uber.org/zap"
 	"io"
 	"net/http"
-	"shorty/internal/app/logger"
 	"strings"
 )
 
@@ -67,7 +67,7 @@ func (c *compressReader) Close() error {
 	return c.zr.Close()
 }
 
-func WithCompressing(h http.Handler, logger logger.Logger) http.Handler {
+func WithCompressing(h http.Handler, logger *zap.SugaredLogger) http.Handler {
 	compressMiddleware := func(w http.ResponseWriter, r *http.Request) {
 		ow := w
 		acceptEncoding := r.Header.Get("Accept-Encoding")
