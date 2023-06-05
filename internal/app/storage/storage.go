@@ -5,16 +5,19 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"strconv"
 	"sync"
 )
 
 type Storage struct {
-	mu       *sync.Mutex
-	links    map[string]string
-	filePath string
+	mu         *sync.Mutex
+	links      map[string]string
+	filePath   string
+	linesCount int
 }
 
 type fileLine struct {
+	UUID        string `json:"uuid"`
 	ShortURL    string `json:"short_url"`
 	OriginalURL string `json:"original_url"`
 }
@@ -40,7 +43,7 @@ func (s *Storage) Get(key string) (string, error) {
 	return val, nil
 }
 
-func (s *Storage) mapURLsFromFileToStorage() error {
+func (s *Storage) mapURLsFromFileToStorageAndCountLines() error {
 	file, err := os.OpenFile(s.filePath, os.O_RDONLY|os.O_CREATE, 0666)
 	if err != nil {
 		return fmt.Errorf("failed to open the file \"%s\": %w", s.filePath, err)
@@ -54,6 +57,7 @@ func (s *Storage) mapURLsFromFileToStorage() error {
 			return fmt.Errorf("failed to decode json: %w", err)
 		}
 		s.links[line.ShortURL] = line.OriginalURL
+		s.linesCount += 1
 	}
 
 	return nil
@@ -66,7 +70,8 @@ func (s *Storage) saveURLToFile(key, value string) error {
 	}
 	defer file.Close()
 
-	line := fileLine{ShortURL: key, OriginalURL: value}
+	s.linesCount += 1
+	line := fileLine{UUID: strconv.Itoa(s.linesCount), ShortURL: key, OriginalURL: value}
 	data, err := json.Marshal(&line)
 	if err != nil {
 		return fmt.Errorf("failed to encode json: %w", err)
@@ -83,13 +88,14 @@ func (s *Storage) saveURLToFile(key, value string) error {
 
 func NewStorage(filePath string) (*Storage, error) {
 	storage := Storage{
-		mu:       &sync.Mutex{},
-		links:    map[string]string{},
-		filePath: filePath,
+		mu:         &sync.Mutex{},
+		links:      map[string]string{},
+		filePath:   filePath,
+		linesCount: 0,
 	}
 
 	if filePath != "" {
-		if err := storage.mapURLsFromFileToStorage(); err != nil {
+		if err := storage.mapURLsFromFileToStorageAndCountLines(); err != nil {
 			return nil, err
 		}
 	}
