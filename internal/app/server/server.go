@@ -2,6 +2,7 @@ package server
 
 import (
 	"github.com/go-chi/chi/v5"
+	"go.uber.org/zap"
 	"net/http"
 	"shorty/internal/app/compress"
 	"shorty/internal/app/config"
@@ -13,7 +14,7 @@ import (
 type handler struct {
 	config  config.Config
 	storage *storage.Storage
-	logger  logger.Logger
+	logger  *zap.SugaredLogger
 }
 
 func (h *handler) getLink(writer http.ResponseWriter, request *http.Request) {
@@ -30,7 +31,7 @@ func (h *handler) shortenLink(writer http.ResponseWriter, request *http.Request)
 }
 
 type middleware struct {
-	logger logger.Logger
+	logger *zap.SugaredLogger
 }
 
 func (m *middleware) withLogging(h http.Handler) http.Handler {

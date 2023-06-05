@@ -2,17 +2,17 @@ package handlers
 
 import (
 	"encoding/json"
+	"go.uber.org/zap"
 	"io"
 	"net/http"
 	"net/url"
 	"shorty/internal/app/config"
 	"shorty/internal/app/hash"
-	"shorty/internal/app/logger"
 	"shorty/internal/app/models"
 	"shorty/internal/app/storage"
 )
 
-func Shortify(writer http.ResponseWriter, request *http.Request, cfg config.Config, str *storage.Storage, logger logger.Logger) {
+func Shortify(writer http.ResponseWriter, request *http.Request, cfg config.Config, str *storage.Storage, logger *zap.SugaredLogger) {
 	if request.Method != http.MethodPost {
 		http.Error(writer, "Only POST requests are allowed", http.StatusBadRequest)
 		return
@@ -54,7 +54,7 @@ func Shortify(writer http.ResponseWriter, request *http.Request, cfg config.Conf
 	}
 }
 
-func GetLink(writer http.ResponseWriter, request *http.Request, hash string, str *storage.Storage, logger logger.Logger) {
+func GetLink(writer http.ResponseWriter, request *http.Request, hash string, str *storage.Storage, logger *zap.SugaredLogger) {
 	if request.Method != http.MethodGet {
 		http.Error(writer, "Only GET requests are allowed", http.StatusBadRequest)
 		return
@@ -77,7 +77,7 @@ func GetLink(writer http.ResponseWriter, request *http.Request, hash string, str
 	writer.WriteHeader(http.StatusTemporaryRedirect)
 }
 
-func ShortenLink(writer http.ResponseWriter, request *http.Request, cfg config.Config, str *storage.Storage, logger logger.Logger) {
+func ShortenLink(writer http.ResponseWriter, request *http.Request, cfg config.Config, str *storage.Storage, logger *zap.SugaredLogger) {
 	if request.Method != http.MethodPost {
 		http.Error(writer, "Only POST requests are allowed", http.StatusBadRequest)
 		return

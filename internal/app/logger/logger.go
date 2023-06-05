@@ -30,9 +30,7 @@ func (r *loggingResponseWriter) WriteHeader(statusCode int) {
 	r.responseData.status = statusCode
 }
 
-type Logger = *zap.SugaredLogger
-
-func Initialize() (Logger, error) {
+func Initialize() (*zap.SugaredLogger, error) {
 	logger, err := zap.NewDevelopment()
 
 	if err != nil {
@@ -42,7 +40,7 @@ func Initialize() (Logger, error) {
 	return logger.Sugar(), nil
 }
 
-func WithLogging(h http.Handler, logger Logger) http.Handler {
+func WithLogging(h http.Handler, logger *zap.SugaredLogger) http.Handler {
 	logFn := func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
 		responseData := &responseData{
