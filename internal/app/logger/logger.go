@@ -34,6 +34,7 @@ type Logger = *zap.SugaredLogger
 
 func Initialize() (Logger, error) {
 	logger, err := zap.NewDevelopment()
+
 	if err != nil {
 		return nil, err
 	}
@@ -44,7 +45,6 @@ func Initialize() (Logger, error) {
 func WithLogging(h http.Handler, logger Logger) http.Handler {
 	logFn := func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
-
 		responseData := &responseData{
 			status: 0,
 			size:   0,
