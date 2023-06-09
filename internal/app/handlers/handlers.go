@@ -36,7 +36,7 @@ func Shortify(writer http.ResponseWriter, request *http.Request, cfg config.Conf
 	hashString := hash.Generate(body)
 	if err := str.Put(hashString, string(body)); err != nil {
 		http.Error(writer, "Internal server error", http.StatusInternalServerError)
-		logger.Errorw("failed to get origin url", "err", err)
+		logger.Errorw("failed to save url", "err", err)
 		return
 	}
 
@@ -100,7 +100,12 @@ func ShortenLink(writer http.ResponseWriter, request *http.Request, cfg config.C
 	}
 
 	hashString := hash.Generate([]byte(req.URL))
-	str.Put(hashString, req.URL)
+	err := str.Put(hashString, req.URL)
+	if err != nil {
+		http.Error(writer, "Internal server error", http.StatusInternalServerError)
+		logger.Errorw("failed to save url", "err", err)
+		return
+	}
 
 	result, err := url.JoinPath(cfg.BaseAddress, hashString)
 	if err != nil {
