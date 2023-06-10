@@ -1,6 +1,7 @@
 package mapStorage
 
 import (
+	"errors"
 	"sync"
 )
 
@@ -21,6 +22,10 @@ func (s *mapStorage) Put(key, value string) error {
 	defer s.mu.Unlock()
 	s.links[key] = value
 	return nil
+}
+
+func (s *mapStorage) Ping() error {
+	return errors.New("There is not a ping method for map storage")
 }
 
 func CreateMapStorage() (*mapStorage, error) {

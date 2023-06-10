@@ -18,7 +18,7 @@ func GetConfig() Config {
 	flag.StringVar(&cfg.ServerAddress, "a", "localhost:8080", "server address")
 	flag.StringVar(&cfg.BaseAddress, "b", "http://localhost:8080", "base address")
 	flag.StringVar(&cfg.FileStoragePath, "f", "/tmp/short-url-db.json", "file storage path")
-	flag.StringVar(&cfg.DatabaseDSN, "d", "/tmp/short-url-db.json", "host=localhost user=postgres password=postgres dbname=postgres sslmode=disable")
+	flag.StringVar(&cfg.DatabaseDSN, "d", "", "database DSN")
 	flag.Parse()
 
 	if envServerAddress := os.Getenv("SERVER_ADDRESS"); envServerAddress != "" {

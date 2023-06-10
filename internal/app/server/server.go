@@ -1,7 +1,6 @@
 package server
 
 import (
-	"database/sql"
 	"net/http"
 	"shorty/internal/app/compress"
 	"shorty/internal/app/config"
@@ -18,7 +17,6 @@ type handler struct {
 	config  config.Config
 	storage storage.Storage
 	logger  *zap.SugaredLogger
-	db      *sql.DB
 }
 
 func (h *handler) getLink(writer http.ResponseWriter, request *http.Request) {
@@ -35,7 +33,7 @@ func (h *handler) shortenLink(writer http.ResponseWriter, request *http.Request)
 }
 
 func (h *handler) checkDatabaseConnection(writer http.ResponseWriter, request *http.Request) {
-	handlers.CheckDatabaseConnection(writer, request, h.db, h.logger)
+	handlers.CheckDatabaseConnection(writer, request, h.storage, h.logger)
 }
 
 type middleware struct {
@@ -56,16 +54,11 @@ func Start() error {
 		return err
 	}
 	c := config.GetConfig()
-	s, err := storage.NewStorage(c.FileStoragePath)
+	s, err := storage.NewStorage(c)
 	if err != nil {
 		return err
 	}
-	db, err := sql.Open("pgx", c.DatabaseDSN)
-	if err != nil {
-		return err
-	}
-	defer db.Close()
-	h := handler{storage: s, config: c, logger: logger, db: db}
+	h := handler{storage: s, config: c, logger: logger}
 	m := middleware{logger: logger}
 
 	router := chi.NewRouter()
