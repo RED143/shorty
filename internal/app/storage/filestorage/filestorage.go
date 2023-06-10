@@ -1,4 +1,4 @@
-package fileStorage
+package filestorage
 
 import (
 	"bufio"
@@ -58,7 +58,7 @@ func (s *fileStorage) Get(key string) (string, error) {
 }
 
 func (s *fileStorage) Ping() error {
-	return errors.New("There is not a ping method for file storage")
+	return errors.New("there is not a ping method for file storage")
 }
 
 func CreateFileStorage(filePath string) (*fileStorage, error) {

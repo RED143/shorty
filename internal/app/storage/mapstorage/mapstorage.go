@@ -1,4 +1,4 @@
-package mapStorage
+package mapstorage
 
 import (
 	"errors"
@@ -25,7 +25,7 @@ func (s *mapStorage) Put(key, value string) error {
 }
 
 func (s *mapStorage) Ping() error {
-	return errors.New("There is not a ping method for map storage")
+	return errors.New("there is not a ping method for map storage")
 }
 
 func CreateMapStorage() (*mapStorage, error) {
