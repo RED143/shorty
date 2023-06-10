@@ -16,10 +16,10 @@ import (
 )
 
 func TestShortify(t *testing.T) {
-	configMock := config.Config{BaseAddress: "http://localhost:8080", ServerAddress: "localhost:8080"}
-	storageMock, err := storage.NewStorage("")
+	configMock := config.Config{BaseAddress: "http://localhost:8080", ServerAddress: "localhost:8080", FileStoragePath: "", DatabaseDSN: ""}
+	storageMock, err := storage.NewStorage(configMock)
 	if err != nil {
-		fmt.Errorf("failed to setup storage %w", err)
+		fmt.Errorf("failed to setup storage %v", err)
 	}
 	loggerMock := zaptest.NewLogger(t).Sugar()
 
@@ -62,9 +62,10 @@ func TestShortify(t *testing.T) {
 }
 
 func TestGetLink(t *testing.T) {
-	storageMock, err := storage.NewStorage("")
+	configMock := config.Config{BaseAddress: "http://localhost:8080", ServerAddress: "localhost:8080", FileStoragePath: "", DatabaseDSN: ""}
+	storageMock, err := storage.NewStorage(configMock)
 	if err != nil {
-		fmt.Errorf("failed to setup storage %w", err)
+		fmt.Errorf("failed to setup storage %v", err)
 	}
 	loggerMock := zaptest.NewLogger(t).Sugar()
 	hash := "asdf"
@@ -89,10 +90,10 @@ func TestGetLink(t *testing.T) {
 }
 
 func TestShortenLink(t *testing.T) {
-	configMock := config.Config{BaseAddress: "http://localhost:8080", ServerAddress: "localhost:8080"}
-	storageMock, err := storage.NewStorage("")
+	configMock := config.Config{BaseAddress: "http://localhost:8080", ServerAddress: "localhost:8080", FileStoragePath: "", DatabaseDSN: ""}
+	storageMock, err := storage.NewStorage(configMock)
 	if err != nil {
-		fmt.Errorf("failed to setup storage %w", err)
+		fmt.Errorf("failed to setup storage %v", err)
 	}
 	loggerMock := zaptest.NewLogger(t).Sugar()
 
@@ -109,7 +110,7 @@ func TestShortenLink(t *testing.T) {
 		data := models.ShortenRequest{URL: ""}
 		reqData, err := json.Marshal(data)
 		if err != nil {
-			fmt.Errorf("failed to json decoding %w", err)
+			fmt.Errorf("failed to json decoding %v", err)
 		}
 		request := httptest.NewRequest(http.MethodPost, "/shorten", bytes.NewReader(reqData))
 		writer := httptest.NewRecorder()

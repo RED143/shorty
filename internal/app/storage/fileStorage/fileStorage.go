@@ -3,6 +3,7 @@ package fileStorage
 import (
 	"bufio"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"strconv"
@@ -27,7 +28,7 @@ func (s *fileStorage) Put(key, value string) error {
 	defer s.mu.Unlock()
 	file, err := os.OpenFile(s.filePath, os.O_WRONLY|os.O_APPEND, 0666)
 	if err != nil {
-		return fmt.Errorf("failed to open the file \"%s\": %w", s.filePath, err)
+		return fmt.Errorf("failed to open the file \"%s\": %v", s.filePath, err)
 	}
 	defer file.Close()
 
@@ -35,13 +36,13 @@ func (s *fileStorage) Put(key, value string) error {
 	line := fileLine{UUID: strconv.Itoa(s.linesCount), ShortURL: key, OriginalURL: value}
 	data, err := json.Marshal(&line)
 	if err != nil {
-		return fmt.Errorf("failed to encode json: %w", err)
+		return fmt.Errorf("failed to encode json: %v", err)
 	}
 	data = append(data, '\n')
 
 	_, err = file.Write(data)
 	if err != nil {
-		return fmt.Errorf("failed to save data to file: %w", err)
+		return fmt.Errorf("failed to save data to file: %v", err)
 	}
 
 	s.links[key] = value
@@ -56,10 +57,14 @@ func (s *fileStorage) Get(key string) (string, error) {
 	return val, nil
 }
 
+func (s *fileStorage) Ping() error {
+	return errors.New("There is not a ping method for file storage")
+}
+
 func CreateFileStorage(filePath string) (*fileStorage, error) {
 	file, err := os.OpenFile(filePath, os.O_RDONLY|os.O_CREATE, 0666)
 	if err != nil {
-		return nil, fmt.Errorf("failed to open the file \"%s\": %w", filePath, err)
+		return nil, fmt.Errorf("failed to open the file \"%s\": %v", filePath, err)
 	}
 	defer file.Close()
 
@@ -70,7 +75,7 @@ func CreateFileStorage(filePath string) (*fileStorage, error) {
 	for scanner.Scan() {
 		line := fileLine{}
 		if err := json.Unmarshal(scanner.Bytes(), &line); err != nil {
-			return nil, fmt.Errorf("failed to decode json: %w", err)
+			return nil, fmt.Errorf("failed to decode json: %v", err)
 		}
 		storage.links[line.ShortURL] = line.OriginalURL
 		storage.linesCount += 1
