@@ -3,7 +3,6 @@ package handlers
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap/zaptest"
 	"net/http"
@@ -19,7 +18,7 @@ func TestShortify(t *testing.T) {
 	configMock := config.Config{BaseAddress: "http://localhost:8080", ServerAddress: "localhost:8080", FileStoragePath: "", DatabaseDSN: ""}
 	storageMock, err := storage.NewStorage(configMock)
 	if err != nil {
-		fmt.Errorf("failed to setup storage %v", err)
+		t.Errorf("failed to setup storage %v", err)
 	}
 	loggerMock := zaptest.NewLogger(t).Sugar()
 
@@ -65,7 +64,7 @@ func TestGetLink(t *testing.T) {
 	configMock := config.Config{BaseAddress: "http://localhost:8080", ServerAddress: "localhost:8080", FileStoragePath: "", DatabaseDSN: ""}
 	storageMock, err := storage.NewStorage(configMock)
 	if err != nil {
-		fmt.Errorf("failed to setup storage %v", err)
+		t.Errorf("failed to setup storage %v", err)
 	}
 	loggerMock := zaptest.NewLogger(t).Sugar()
 	hash := "asdf"
@@ -93,7 +92,7 @@ func TestShortenLink(t *testing.T) {
 	configMock := config.Config{BaseAddress: "http://localhost:8080", ServerAddress: "localhost:8080", FileStoragePath: "", DatabaseDSN: ""}
 	storageMock, err := storage.NewStorage(configMock)
 	if err != nil {
-		fmt.Errorf("failed to setup storage %v", err)
+		t.Errorf("failed to setup storage %v", err)
 	}
 	loggerMock := zaptest.NewLogger(t).Sugar()
 
@@ -110,7 +109,7 @@ func TestShortenLink(t *testing.T) {
 		data := models.ShortenRequest{URL: ""}
 		reqData, err := json.Marshal(data)
 		if err != nil {
-			fmt.Errorf("failed to json decoding %v", err)
+			t.Errorf("failed to setup storage %v", err)
 		}
 		request := httptest.NewRequest(http.MethodPost, "/shorten", bytes.NewReader(reqData))
 		writer := httptest.NewRecorder()

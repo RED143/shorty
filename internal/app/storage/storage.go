@@ -2,9 +2,9 @@ package storage
 
 import (
 	"shorty/internal/app/config"
-	"shorty/internal/app/storage/dbStorage"
-	"shorty/internal/app/storage/fileStorage"
-	"shorty/internal/app/storage/mapStorage"
+	"shorty/internal/app/storage/dbstorage"
+	"shorty/internal/app/storage/filestorage"
+	"shorty/internal/app/storage/mapstorage"
 )
 
 type Storage interface {
@@ -15,13 +15,13 @@ type Storage interface {
 
 func NewStorage(config config.Config) (Storage, error) {
 	if config.DatabaseDSN != "" {
-		s, err := dbStorage.CreateDBStorage(config.DatabaseDSN)
+		s, err := dbstorage.CreateDBStorage(config.DatabaseDSN)
 		return s, err
 	} else if config.FileStoragePath != "" {
-		s, err := fileStorage.CreateFileStorage(config.FileStoragePath)
+		s, err := filestorage.CreateFileStorage(config.FileStoragePath)
 		return s, err
 	} else {
-		s, err := mapStorage.CreateMapStorage()
+		s, err := mapstorage.CreateMapStorage()
 		return s, err
 	}
 }
