@@ -16,7 +16,7 @@ import (
 
 type handler struct {
 	config  config.Config
-	storage *storage.Storage
+	storage storage.Storage
 	logger  *zap.SugaredLogger
 	db      *sql.DB
 }
