@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"fmt"
 	"go.uber.org/zap"
 	"io"
 	"net/http"
@@ -121,6 +122,14 @@ func ShortenLink(writer http.ResponseWriter, request *http.Request, cfg config.C
 		logger.Errorw("error encoding response", "err", err)
 		return
 	}
+}
+
+func ShortenLinkBatch(writer http.ResponseWriter, request *http.Request, cfg config.Config, str storage.Storage, logger *zap.SugaredLogger) {
+	if request.Method != http.MethodPost {
+		http.Error(writer, "Only POST requests are allowed", http.StatusBadRequest)
+		return
+	}
+	fmt.Println("invoke batch saving")
 }
 
 func CheckDatabaseConnection(writer http.ResponseWriter, request *http.Request, str storage.Storage, logger *zap.SugaredLogger) {
