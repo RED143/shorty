@@ -61,6 +61,11 @@ func (s *fileStorage) Ping() error {
 	return errors.New("there is not a ping method for file storage")
 }
 
+func (s *fileStorage) Batch() error {
+	fmt.Println("file storage batching")
+	return nil
+}
+
 func CreateFileStorage(filePath string) (*fileStorage, error) {
 	file, err := os.OpenFile(filePath, os.O_RDONLY|os.O_CREATE, 0666)
 	if err != nil {

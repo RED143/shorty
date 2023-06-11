@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"encoding/json"
-	"fmt"
 	"go.uber.org/zap"
 	"io"
 	"net/http"
@@ -129,7 +128,12 @@ func ShortenLinkBatch(writer http.ResponseWriter, request *http.Request, cfg con
 		http.Error(writer, "Only POST requests are allowed", http.StatusBadRequest)
 		return
 	}
-	fmt.Println("invoke batch saving")
+	err := str.Batch()
+	if err != nil {
+		http.Error(writer, "Internal server error", http.StatusInternalServerError)
+		logger.Errorw("Failed to batch save", "err", err)
+		return
+	}
 }
 
 func CheckDatabaseConnection(writer http.ResponseWriter, request *http.Request, str storage.Storage, logger *zap.SugaredLogger) {
