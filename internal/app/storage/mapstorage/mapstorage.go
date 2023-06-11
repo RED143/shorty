@@ -2,7 +2,7 @@ package mapstorage
 
 import (
 	"errors"
-	"fmt"
+	"shorty/internal/app/hash"
 	"shorty/internal/app/models"
 	"sync"
 )
@@ -31,7 +31,11 @@ func (s *mapStorage) Ping() error {
 }
 
 func (s *mapStorage) Batch(urls models.ShortenBatchRequest) error {
-	fmt.Println("map storage batching", urls)
+	for _, url := range urls {
+		if err := s.Put(hash.Generate([]byte(url.OriginalUrl)), url.OriginalUrl); err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
