@@ -74,10 +74,10 @@ func (s *storage) Batch(urls models.ShortenBatchRequest) error {
 	}
 
 	for _, url := range urls {
-		_, err := tx.ExecContext(context.TODO(), "INSERT INTO links (hash, url) VALUES ($1, $2)", hash.Generate([]byte(url.OriginalUrl)), url.OriginalUrl)
+		_, err := tx.ExecContext(context.TODO(), "INSERT INTO links (hash, url) VALUES ($1, $2)", hash.Generate([]byte(url.OriginalURL)), url.OriginalURL)
 		if err != nil {
 			tx.Rollback()
-			return fmt.Errorf("failed to insert line in table with url=%s: %v", url.OriginalUrl, err)
+			return fmt.Errorf("failed to insert line in table with url=%s: %v", url.OriginalURL, err)
 		}
 	}
 

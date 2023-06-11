@@ -9,13 +9,13 @@ type ShortenResponse struct {
 }
 
 type ShortenBatchRequest []struct {
-	CorrelationId int    `json:"correlation_id"`
-	OriginalUrl   string `json:"original_url"`
+	CorrelationID string `json:"correlation_id"`
+	OriginalURL   string `json:"original_url"`
 }
 
 type ShortenBatchResponseItem struct {
-	CorrelationId int    `json:"correlation_id"`
-	ShortUrl      string `json:"short_url"`
+	CorrelationID string `json:"correlation_id"`
+	ShortURL      string `json:"short_url"`
 }
 
 type ShortenBatchResponse []ShortenBatchResponseItem

@@ -146,13 +146,13 @@ func ShortenLinkBatch(writer http.ResponseWriter, request *http.Request, cfg con
 
 	var response models.ShortenBatchResponse
 	for _, u := range urls {
-		shortUrl, err := url.JoinPath(cfg.BaseAddress, hash.Generate([]byte(u.OriginalUrl)))
+		shortURL, err := url.JoinPath(cfg.BaseAddress, hash.Generate([]byte(u.OriginalURL)))
 		if err != nil {
 			http.Error(writer, "Internal server error", http.StatusInternalServerError)
 			logger.Errorw("failed to generate path", "err", err)
 			return
 		}
-		response = append(response, models.ShortenBatchResponseItem{CorrelationId: u.CorrelationId, ShortUrl: shortUrl})
+		response = append(response, models.ShortenBatchResponseItem{CorrelationID: u.CorrelationID, ShortURL: shortURL})
 	}
 
 	writer.Header().Set("content-type", "application/json")
