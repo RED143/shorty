@@ -53,7 +53,7 @@ func (m *middleware) withCompressing(h http.Handler) http.Handler {
 }
 
 func Start() error {
-	logger, err := logger.Initialize()
+	l, err := logger.Initialize()
 	if err != nil {
 		return err
 	}
@@ -62,8 +62,8 @@ func Start() error {
 	if err != nil {
 		return err
 	}
-	h := handler{storage: s, config: c, logger: logger}
-	m := middleware{logger: logger}
+	h := handler{storage: s, config: c, logger: l}
+	m := middleware{logger: l}
 
 	router := chi.NewRouter()
 
@@ -76,7 +76,7 @@ func Start() error {
 	router.Get("/ping", h.checkDatabaseConnection)
 	router.Get("/{hash}", h.getLink)
 
-	logger.Infow("Starting server", "address", c.ServerAddress)
+	l.Infow("Starting server", "address", c.ServerAddress)
 	if err := http.ListenAndServe(c.ServerAddress, router); err != nil {
 		return err
 	}

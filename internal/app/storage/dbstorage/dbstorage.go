@@ -64,6 +64,11 @@ func (s *storage) Ping() error {
 	return nil
 }
 
+func (s *storage) Batch() error {
+	fmt.Println("db storage batching")
+	return nil
+}
+
 func setUpDatabase(db *sql.DB) error {
 	conn, err := db.Conn(context.TODO())
 	if err != nil {

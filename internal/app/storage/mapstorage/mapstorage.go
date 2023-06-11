@@ -2,6 +2,7 @@ package mapstorage
 
 import (
 	"errors"
+	"fmt"
 	"sync"
 )
 
@@ -26,6 +27,11 @@ func (s *mapStorage) Put(key, value string) error {
 
 func (s *mapStorage) Ping() error {
 	return errors.New("there is not a ping method for map storage")
+}
+
+func (s *mapStorage) Batch() error {
+	fmt.Println("map storage batching")
+	return nil
 }
 
 func CreateMapStorage() (*mapStorage, error) {
