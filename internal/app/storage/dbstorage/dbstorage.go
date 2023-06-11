@@ -4,6 +4,8 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"shorty/internal/app/hash"
+	"shorty/internal/app/models"
 	"time"
 )
 
@@ -64,9 +66,22 @@ func (s *storage) Ping() error {
 	return nil
 }
 
-func (s *storage) Batch() error {
-	fmt.Println("db storage batching")
-	return nil
+func (s *storage) Batch(urls models.ShortenBatchRequest) error {
+	fmt.Println("db storage batching!!!", urls)
+	tx, err := s.db.Begin()
+	if err != nil {
+		return fmt.Errorf("failed to begin transaction: %v", err)
+	}
+
+	for _, url := range urls {
+		_, err := tx.ExecContext(context.TODO(), "INSERT INTO links (hash, url) VALUES ($1, $2)", hash.Generate([]byte(url.OriginalUrl)), url.OriginalUrl)
+		if err != nil {
+			tx.Rollback()
+			return fmt.Errorf("failed to insert line in table with url=%s: %v", url.OriginalUrl, err)
+		}
+	}
+
+	return tx.Commit()
 }
 
 func setUpDatabase(db *sql.DB) error {
@@ -76,7 +91,7 @@ func setUpDatabase(db *sql.DB) error {
 	}
 	defer conn.Close()
 
-	_, err = conn.ExecContext(context.TODO(), `CREATE TABLE IF NOT EXISTS links (hash VARCHAR(8), url VARCHAR(1024))`)
+	_, err = conn.ExecContext(context.TODO(), `CREATE TABLE IF NOT EXISTS links (id SERIAL PRIMARY KEY, hash VARCHAR(8), url VARCHAR(1024))`)
 
 	if err != nil {
 		return fmt.Errorf("failed to create table: %w", err)

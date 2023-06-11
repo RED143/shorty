@@ -2,6 +2,7 @@ package storage
 
 import (
 	"shorty/internal/app/config"
+	"shorty/internal/app/models"
 	"shorty/internal/app/storage/dbstorage"
 	"shorty/internal/app/storage/filestorage"
 	"shorty/internal/app/storage/mapstorage"
@@ -11,7 +12,7 @@ type Storage interface {
 	Put(key, value string) error
 	Get(key string) (string, error)
 	Ping() error
-	Batch() error
+	Batch(urls models.ShortenBatchRequest) error
 }
 
 func NewStorage(config config.Config) (Storage, error) {
