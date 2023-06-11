@@ -128,10 +128,39 @@ func ShortenLinkBatch(writer http.ResponseWriter, request *http.Request, cfg con
 		http.Error(writer, "Only POST requests are allowed", http.StatusBadRequest)
 		return
 	}
-	err := str.Batch()
+
+	var urls models.ShortenBatchRequest
+	dec := json.NewDecoder(request.Body)
+	if err := dec.Decode(&urls); err != nil {
+		http.Error(writer, "Internal server error", http.StatusInternalServerError)
+		logger.Errorw("cannot decode request JSON body", "err", err)
+		return
+	}
+
+	err := str.Batch(urls)
 	if err != nil {
 		http.Error(writer, "Internal server error", http.StatusInternalServerError)
-		logger.Errorw("Failed to batch save", "err", err)
+		logger.Errorw("Failed to batch saving", "err", err)
+		return
+	}
+
+	var response models.ShortenBatchResponse
+	for _, u := range urls {
+		shortUrl, err := url.JoinPath(cfg.BaseAddress, hash.Generate([]byte(u.OriginalUrl)))
+		if err != nil {
+			http.Error(writer, "Internal server error", http.StatusInternalServerError)
+			logger.Errorw("failed to generate path", "err", err)
+			return
+		}
+		response = append(response, models.ShortenBatchResponseItem{CorrelationId: u.CorrelationId, ShortUrl: shortUrl})
+	}
+
+	writer.Header().Set("content-type", "application/json")
+	writer.WriteHeader(http.StatusCreated)
+	enc := json.NewEncoder(writer)
+	if err := enc.Encode(response); err != nil {
+		http.Error(writer, "Internal server error", http.StatusInternalServerError)
+		logger.Errorw("error encoding response", "err", err)
 		return
 	}
 }

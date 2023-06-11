@@ -3,6 +3,7 @@ package mapstorage
 import (
 	"errors"
 	"fmt"
+	"shorty/internal/app/models"
 	"sync"
 )
 
@@ -29,8 +30,8 @@ func (s *mapStorage) Ping() error {
 	return errors.New("there is not a ping method for map storage")
 }
 
-func (s *mapStorage) Batch() error {
-	fmt.Println("map storage batching")
+func (s *mapStorage) Batch(urls models.ShortenBatchRequest) error {
+	fmt.Println("map storage batching", urls)
 	return nil
 }
 

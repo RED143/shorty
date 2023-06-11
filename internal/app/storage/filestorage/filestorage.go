@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"shorty/internal/app/models"
 	"strconv"
 	"sync"
 )
@@ -61,8 +62,8 @@ func (s *fileStorage) Ping() error {
 	return errors.New("there is not a ping method for file storage")
 }
 
-func (s *fileStorage) Batch() error {
-	fmt.Println("file storage batching")
+func (s *fileStorage) Batch(urls models.ShortenBatchRequest) error {
+	fmt.Println("file storage batching", urls)
 	return nil
 }
 
