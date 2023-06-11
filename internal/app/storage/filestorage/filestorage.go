@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"shorty/internal/app/hash"
 	"shorty/internal/app/models"
 	"strconv"
 	"sync"
@@ -59,11 +60,15 @@ func (s *fileStorage) Get(key string) (string, error) {
 }
 
 func (s *fileStorage) Ping() error {
-	return errors.New("there is not a ping method for file storage")
+	return errors.New("there is no ping method for file storage")
 }
 
 func (s *fileStorage) Batch(urls models.ShortenBatchRequest) error {
-	fmt.Println("file storage batching", urls)
+	for _, url := range urls {
+		if err := s.Put(hash.Generate([]byte(url.OriginalUrl)), url.OriginalUrl); err != nil {
+			return err
+		}
+	}
 	return nil
 }
 

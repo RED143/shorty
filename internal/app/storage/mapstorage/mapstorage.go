@@ -27,7 +27,7 @@ func (s *mapStorage) Put(key, value string) error {
 }
 
 func (s *mapStorage) Ping() error {
-	return errors.New("there is not a ping method for map storage")
+	return errors.New("there is no ping method for map storage")
 }
 
 func (s *mapStorage) Batch(urls models.ShortenBatchRequest) error {
