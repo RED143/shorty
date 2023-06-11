@@ -32,6 +32,10 @@ func (h *handler) shortenLink(writer http.ResponseWriter, request *http.Request)
 	handlers.ShortenLink(writer, request, h.config, h.storage, h.logger)
 }
 
+func (h *handler) shortenLinkBatch(writer http.ResponseWriter, request *http.Request) {
+	handlers.ShortenLinkBatch(writer, request, h.config, h.storage, h.logger)
+}
+
 func (h *handler) checkDatabaseConnection(writer http.ResponseWriter, request *http.Request) {
 	handlers.CheckDatabaseConnection(writer, request, h.storage, h.logger)
 }
@@ -68,6 +72,7 @@ func Start() error {
 
 	router.Post("/", h.shortifyLink)
 	router.Post("/api/shorten", h.shortenLink)
+	router.Post("/api/shorten/batch", h.shortenLinkBatch)
 	router.Get("/ping", h.checkDatabaseConnection)
 	router.Get("/{hash}", h.getLink)
 
