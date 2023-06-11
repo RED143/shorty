@@ -32,7 +32,7 @@ func (s *mapStorage) Ping() error {
 
 func (s *mapStorage) Batch(urls models.ShortenBatchRequest) error {
 	for _, url := range urls {
-		if err := s.Put(hash.Generate([]byte(url.OriginalUrl)), url.OriginalUrl); err != nil {
+		if err := s.Put(hash.Generate([]byte(url.OriginalURL)), url.OriginalURL); err != nil {
 			return err
 		}
 	}
