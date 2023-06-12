@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"errors"
 	"go.uber.org/zap"
 	"io"
 	"net/http"
@@ -10,6 +11,7 @@ import (
 	"shorty/internal/app/hash"
 	"shorty/internal/app/models"
 	"shorty/internal/app/storage"
+	"shorty/internal/app/storage/dbstorage"
 )
 
 func Shortify(writer http.ResponseWriter, request *http.Request, cfg config.Config, str storage.Storage, logger *zap.SugaredLogger) {
@@ -31,7 +33,9 @@ func Shortify(writer http.ResponseWriter, request *http.Request, cfg config.Conf
 	}
 
 	hashString := hash.Generate(body)
-	if err := str.Put(hashString, string(body)); err != nil {
+	err = str.Put(hashString, string(body))
+	alreadySaved := errors.Is(err, dbstorage.ErrConflict)
+	if err != nil && !alreadySaved {
 		http.Error(writer, "Internal server error", http.StatusInternalServerError)
 		logger.Errorw("failed to save url", "err", err)
 		return
@@ -44,8 +48,12 @@ func Shortify(writer http.ResponseWriter, request *http.Request, cfg config.Conf
 		return
 	}
 
+	statusCode := http.StatusCreated
+	if alreadySaved {
+		statusCode = http.StatusConflict
+	}
 	writer.Header().Set("content-type", "plain/text")
-	writer.WriteHeader(http.StatusCreated)
+	writer.WriteHeader(statusCode)
 	_, err = writer.Write([]byte(fullURL))
 	if err != nil {
 		http.Error(writer, "Internal server error", http.StatusInternalServerError)
@@ -98,7 +106,8 @@ func ShortenLink(writer http.ResponseWriter, request *http.Request, cfg config.C
 
 	hashString := hash.Generate([]byte(req.URL))
 	err := str.Put(hashString, req.URL)
-	if err != nil {
+	alreadySaved := errors.Is(err, dbstorage.ErrConflict)
+	if err != nil && !alreadySaved {
 		http.Error(writer, "Internal server error", http.StatusInternalServerError)
 		logger.Errorw("failed to save url", "err", err)
 		return
@@ -113,8 +122,12 @@ func ShortenLink(writer http.ResponseWriter, request *http.Request, cfg config.C
 
 	resp := models.ShortenResponse{Result: result}
 
+	statusCode := http.StatusCreated
+	if alreadySaved {
+		statusCode = http.StatusConflict
+	}
 	writer.Header().Set("content-type", "application/json")
-	writer.WriteHeader(http.StatusCreated)
+	writer.WriteHeader(statusCode)
 	enc := json.NewEncoder(writer)
 	if err := enc.Encode(resp); err != nil {
 		http.Error(writer, "Internal server error", http.StatusInternalServerError)

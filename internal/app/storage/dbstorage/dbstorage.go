@@ -3,11 +3,14 @@ package dbstorage
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"shorty/internal/app/hash"
 	"shorty/internal/app/models"
 	"time"
 )
+
+var ErrConflict = errors.New("url already saved")
 
 type storage struct {
 	db *sql.DB
@@ -45,12 +48,21 @@ func (s *storage) Get(key string) (string, error) {
 func (s *storage) Put(key, value string) error {
 	conn, err := s.db.Conn(context.TODO())
 	if err != nil {
-		return fmt.Errorf("failed to open connection to db: %v", err)
+		return fmt.Errorf("failed to open connection to db: %w", err)
 	}
 
-	_, err = conn.ExecContext(context.TODO(), "INSERT INTO links (hash, url) VALUES ($1, $2)", key, value)
+	result, err := conn.ExecContext(context.TODO(), "INSERT INTO links (hash, url) VALUES ($1, $2) ON CONFLICT (url) DO NOTHING", key, value)
 	if err != nil {
-		return fmt.Errorf("could not insert row: %v", err)
+		return fmt.Errorf("failed to insert row: %v", err)
+	}
+
+	count, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("failed to count affected rows %v", err)
+	}
+
+	if count == 0 {
+		return ErrConflict
 	}
 
 	return nil
@@ -92,10 +104,13 @@ func setUpDatabase(db *sql.DB) error {
 	defer conn.Close()
 
 	_, err = conn.ExecContext(context.TODO(), `CREATE TABLE IF NOT EXISTS links (id SERIAL PRIMARY KEY, hash VARCHAR(8), url VARCHAR(1024))`)
-
 	if err != nil {
 		return fmt.Errorf("failed to create table: %w", err)
+	}
 
+	_, err = conn.ExecContext(context.TODO(), `CREATE UNIQUE INDEX IF NOT EXISTS id_url ON links (url)`)
+	if err != nil {
+		return fmt.Errorf("failed to set index: %v", err)
 	}
 	return nil
 }
