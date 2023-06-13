@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap/zaptest"
@@ -53,7 +54,7 @@ func TestShortify(t *testing.T) {
 			request := httptest.NewRequest(tc.method, "/", strings.NewReader(tc.body))
 			writer := httptest.NewRecorder()
 
-			Shortify(writer, request, configMock, storageMock, loggerMock)
+			Shortify(context.Background(), writer, request, configMock, storageMock, loggerMock)
 
 			assert.Equal(t, tc.expectedCode, writer.Code, "Got code %s; expected %s", writer.Code, tc.expectedCode)
 		})
@@ -73,7 +74,7 @@ func TestGetLink(t *testing.T) {
 		request := httptest.NewRequest(http.MethodPost, "/asdf", nil)
 		writer := httptest.NewRecorder()
 
-		GetLink(writer, request, hash, storageMock, loggerMock)
+		GetLink(context.Background(), writer, request, hash, storageMock, loggerMock)
 
 		assert.Equal(t, http.StatusBadRequest, writer.Code, "Got code %s; expected %s", writer.Code, http.StatusBadRequest)
 	})
@@ -82,7 +83,7 @@ func TestGetLink(t *testing.T) {
 		request := httptest.NewRequest(http.MethodGet, "/asdf", nil)
 		writer := httptest.NewRecorder()
 
-		GetLink(writer, request, hash, storageMock, loggerMock)
+		GetLink(context.Background(), writer, request, hash, storageMock, loggerMock)
 
 		assert.Equal(t, http.StatusBadRequest, writer.Code, "Got code %s; expected %s", writer.Code, http.StatusBadRequest)
 	})
@@ -100,7 +101,7 @@ func TestShortenLink(t *testing.T) {
 		request := httptest.NewRequest(http.MethodGet, "/shorten", nil)
 		writer := httptest.NewRecorder()
 
-		ShortenLink(writer, request, configMock, storageMock, loggerMock)
+		ShortenLink(context.Background(), writer, request, configMock, storageMock, loggerMock)
 
 		assert.Equal(t, http.StatusBadRequest, writer.Code, "Got code %s; expected %s", writer.Code, http.StatusBadRequest)
 	})
@@ -114,7 +115,7 @@ func TestShortenLink(t *testing.T) {
 		request := httptest.NewRequest(http.MethodPost, "/shorten", bytes.NewReader(reqData))
 		writer := httptest.NewRecorder()
 
-		ShortenLink(writer, request, configMock, storageMock, loggerMock)
+		ShortenLink(context.Background(), writer, request, configMock, storageMock, loggerMock)
 
 		assert.Equal(t, http.StatusBadRequest, writer.Code, "Got code %s; expected %s", writer.Code, http.StatusBadRequest)
 	})

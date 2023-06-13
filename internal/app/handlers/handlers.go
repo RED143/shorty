@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"go.uber.org/zap"
@@ -14,7 +15,7 @@ import (
 	"shorty/internal/app/storage/dbstorage"
 )
 
-func Shortify(writer http.ResponseWriter, request *http.Request, cfg config.Config, str storage.Storage, logger *zap.SugaredLogger) {
+func Shortify(ctx context.Context, writer http.ResponseWriter, request *http.Request, cfg config.Config, str storage.Storage, logger *zap.SugaredLogger) {
 	if request.Method != http.MethodPost {
 		http.Error(writer, "Only POST requests are allowed", http.StatusBadRequest)
 		return
@@ -33,7 +34,7 @@ func Shortify(writer http.ResponseWriter, request *http.Request, cfg config.Conf
 	}
 
 	hashString := hash.Generate(body)
-	err = str.Put(hashString, string(body))
+	err = str.Put(ctx, hashString, string(body))
 	alreadySaved := errors.Is(err, dbstorage.ErrConflict)
 	if err != nil && !alreadySaved {
 		http.Error(writer, "Internal server error", http.StatusInternalServerError)
@@ -62,13 +63,13 @@ func Shortify(writer http.ResponseWriter, request *http.Request, cfg config.Conf
 	}
 }
 
-func GetLink(writer http.ResponseWriter, request *http.Request, hash string, str storage.Storage, logger *zap.SugaredLogger) {
+func GetLink(ctx context.Context, writer http.ResponseWriter, request *http.Request, hash string, str storage.Storage, logger *zap.SugaredLogger) {
 	if request.Method != http.MethodGet {
 		http.Error(writer, "Only GET requests are allowed", http.StatusBadRequest)
 		return
 	}
 
-	link, err := str.Get(hash)
+	link, err := str.Get(ctx, hash)
 
 	if err != nil {
 		http.Error(writer, "Internal server error", http.StatusInternalServerError)
@@ -85,7 +86,7 @@ func GetLink(writer http.ResponseWriter, request *http.Request, hash string, str
 	writer.WriteHeader(http.StatusTemporaryRedirect)
 }
 
-func ShortenLink(writer http.ResponseWriter, request *http.Request, cfg config.Config, str storage.Storage, logger *zap.SugaredLogger) {
+func ShortenLink(ctx context.Context, writer http.ResponseWriter, request *http.Request, cfg config.Config, str storage.Storage, logger *zap.SugaredLogger) {
 	if request.Method != http.MethodPost {
 		http.Error(writer, "Only POST requests are allowed", http.StatusBadRequest)
 		return
@@ -105,7 +106,7 @@ func ShortenLink(writer http.ResponseWriter, request *http.Request, cfg config.C
 	}
 
 	hashString := hash.Generate([]byte(req.URL))
-	err := str.Put(hashString, req.URL)
+	err := str.Put(ctx, hashString, req.URL)
 	alreadySaved := errors.Is(err, dbstorage.ErrConflict)
 	if err != nil && !alreadySaved {
 		http.Error(writer, "Internal server error", http.StatusInternalServerError)
@@ -136,7 +137,7 @@ func ShortenLink(writer http.ResponseWriter, request *http.Request, cfg config.C
 	}
 }
 
-func ShortenLinkBatch(writer http.ResponseWriter, request *http.Request, cfg config.Config, str storage.Storage, logger *zap.SugaredLogger) {
+func ShortenLinkBatch(ctx context.Context, writer http.ResponseWriter, request *http.Request, cfg config.Config, str storage.Storage, logger *zap.SugaredLogger) {
 	if request.Method != http.MethodPost {
 		http.Error(writer, "Only POST requests are allowed", http.StatusBadRequest)
 		return
@@ -150,7 +151,7 @@ func ShortenLinkBatch(writer http.ResponseWriter, request *http.Request, cfg con
 		return
 	}
 
-	err := str.Batch(urls)
+	err := str.Batch(ctx, urls)
 	if err != nil {
 		http.Error(writer, "Internal server error", http.StatusInternalServerError)
 		logger.Errorw("Failed to batch saving", "err", err)
@@ -178,13 +179,13 @@ func ShortenLinkBatch(writer http.ResponseWriter, request *http.Request, cfg con
 	}
 }
 
-func CheckDatabaseConnection(writer http.ResponseWriter, request *http.Request, str storage.Storage, logger *zap.SugaredLogger) {
+func CheckDatabaseConnection(ctx context.Context, writer http.ResponseWriter, request *http.Request, str storage.Storage, logger *zap.SugaredLogger) {
 	if request.Method != http.MethodGet {
 		http.Error(writer, "Only GET requests are allowed", http.StatusBadRequest)
 		return
 	}
 
-	if err := str.Ping(); err != nil {
+	if err := str.Ping(ctx); err != nil {
 		http.Error(writer, "Internal server error", http.StatusInternalServerError)
 		logger.Errorw("Failed to connect database", "err", err)
 		return

@@ -1,6 +1,7 @@
 package mapstorage
 
 import (
+	"context"
 	"errors"
 	"shorty/internal/app/hash"
 	"shorty/internal/app/models"
@@ -12,27 +13,27 @@ type mapStorage struct {
 	links map[string]string
 }
 
-func (s *mapStorage) Get(key string) (string, error) {
+func (s *mapStorage) Get(ctx context.Context, key string) (string, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	val := s.links[key]
 	return val, nil
 }
 
-func (s *mapStorage) Put(key, value string) error {
+func (s *mapStorage) Put(ctx context.Context, key, value string) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.links[key] = value
 	return nil
 }
 
-func (s *mapStorage) Ping() error {
+func (s *mapStorage) Ping(ctx context.Context) error {
 	return errors.New("there is no ping method for map storage")
 }
 
-func (s *mapStorage) Batch(urls models.ShortenBatchRequest) error {
+func (s *mapStorage) Batch(ctx context.Context, urls models.ShortenBatchRequest) error {
 	for _, url := range urls {
-		if err := s.Put(hash.Generate([]byte(url.OriginalURL)), url.OriginalURL); err != nil {
+		if err := s.Put(ctx, hash.Generate([]byte(url.OriginalURL)), url.OriginalURL); err != nil {
 			return err
 		}
 	}

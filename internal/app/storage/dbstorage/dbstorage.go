@@ -16,13 +16,13 @@ type storage struct {
 	db *sql.DB
 }
 
-func CreateDBStorage(databaseDSN string) (*storage, error) {
+func CreateDBStorage(ctx context.Context, databaseDSN string) (*storage, error) {
 	db, err := sql.Open("pgx", databaseDSN)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := setUpDatabase(db); err != nil {
+	if err := setUpDatabase(ctx, db); err != nil {
 		return nil, err
 	}
 
@@ -31,8 +31,8 @@ func CreateDBStorage(databaseDSN string) (*storage, error) {
 	return s, nil
 }
 
-func (s *storage) Get(key string) (string, error) {
-	conn, err := s.db.Conn(context.TODO())
+func (s *storage) Get(ctx context.Context, key string) (string, error) {
+	conn, err := s.db.Conn(ctx)
 	if err != nil {
 		return "", fmt.Errorf("failed to open connection to db: %v", err)
 	}
@@ -45,13 +45,13 @@ func (s *storage) Get(key string) (string, error) {
 	return url, nil
 }
 
-func (s *storage) Put(key, value string) error {
-	conn, err := s.db.Conn(context.TODO())
+func (s *storage) Put(ctx context.Context, key, value string) error {
+	conn, err := s.db.Conn(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to open connection to db: %w", err)
 	}
 
-	result, err := conn.ExecContext(context.TODO(), "INSERT INTO links (hash, url) VALUES ($1, $2) ON CONFLICT (url) DO NOTHING", key, value)
+	result, err := conn.ExecContext(ctx, "INSERT INTO links (hash, url) VALUES ($1, $2) ON CONFLICT (url) DO NOTHING", key, value)
 	if err != nil {
 		return fmt.Errorf("failed to insert row: %v", err)
 	}
@@ -68,8 +68,8 @@ func (s *storage) Put(key, value string) error {
 	return nil
 }
 
-func (s *storage) Ping() error {
-	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+func (s *storage) Ping(ctx context.Context) error {
+	ctx, cancel := context.WithTimeout(ctx, 1*time.Second)
 	defer cancel()
 	if err := s.db.PingContext(ctx); err != nil {
 		return err
@@ -78,7 +78,7 @@ func (s *storage) Ping() error {
 	return nil
 }
 
-func (s *storage) Batch(urls models.ShortenBatchRequest) error {
+func (s *storage) Batch(ctx context.Context, urls models.ShortenBatchRequest) error {
 	fmt.Println("db storage batching!!!", urls)
 	tx, err := s.db.Begin()
 	if err != nil {
@@ -86,7 +86,7 @@ func (s *storage) Batch(urls models.ShortenBatchRequest) error {
 	}
 
 	for _, url := range urls {
-		_, err := tx.ExecContext(context.TODO(), "INSERT INTO links (hash, url) VALUES ($1, $2)", hash.Generate([]byte(url.OriginalURL)), url.OriginalURL)
+		_, err := tx.ExecContext(ctx, "INSERT INTO links (hash, url) VALUES ($1, $2)", hash.Generate([]byte(url.OriginalURL)), url.OriginalURL)
 		if err != nil {
 			tx.Rollback()
 			return fmt.Errorf("failed to insert line in table with url=%s: %v", url.OriginalURL, err)
@@ -96,19 +96,19 @@ func (s *storage) Batch(urls models.ShortenBatchRequest) error {
 	return tx.Commit()
 }
 
-func setUpDatabase(db *sql.DB) error {
-	conn, err := db.Conn(context.TODO())
+func setUpDatabase(ctx context.Context, db *sql.DB) error {
+	conn, err := db.Conn(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to open connection to db: %v", err)
 	}
 	defer conn.Close()
 
-	_, err = conn.ExecContext(context.TODO(), `CREATE TABLE IF NOT EXISTS links (id SERIAL PRIMARY KEY, hash VARCHAR(8), url VARCHAR(1024))`)
+	_, err = conn.ExecContext(ctx, `CREATE TABLE IF NOT EXISTS links (id SERIAL PRIMARY KEY, hash VARCHAR(8), url VARCHAR(1024))`)
 	if err != nil {
 		return fmt.Errorf("failed to create table: %w", err)
 	}
 
-	_, err = conn.ExecContext(context.TODO(), `CREATE UNIQUE INDEX IF NOT EXISTS id_url ON links (url)`)
+	_, err = conn.ExecContext(ctx, `CREATE UNIQUE INDEX IF NOT EXISTS id_url ON links (url)`)
 	if err != nil {
 		return fmt.Errorf("failed to set index: %v", err)
 	}
