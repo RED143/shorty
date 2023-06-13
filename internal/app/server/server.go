@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"net/http"
 	"shorty/internal/app/compress"
 	"shorty/internal/app/config"
@@ -17,27 +18,28 @@ type handler struct {
 	config  config.Config
 	storage storage.Storage
 	logger  *zap.SugaredLogger
+	ctx     context.Context
 }
 
 func (h *handler) getLink(writer http.ResponseWriter, request *http.Request) {
 	hash := chi.URLParam(request, "hash")
-	handlers.GetLink(writer, request, hash, h.storage, h.logger)
+	handlers.GetLink(h.ctx, writer, request, hash, h.storage, h.logger)
 }
 
 func (h *handler) shortifyLink(writer http.ResponseWriter, request *http.Request) {
-	handlers.Shortify(writer, request, h.config, h.storage, h.logger)
+	handlers.Shortify(h.ctx, writer, request, h.config, h.storage, h.logger)
 }
 
 func (h *handler) shortenLink(writer http.ResponseWriter, request *http.Request) {
-	handlers.ShortenLink(writer, request, h.config, h.storage, h.logger)
+	handlers.ShortenLink(h.ctx, writer, request, h.config, h.storage, h.logger)
 }
 
 func (h *handler) shortenLinkBatch(writer http.ResponseWriter, request *http.Request) {
-	handlers.ShortenLinkBatch(writer, request, h.config, h.storage, h.logger)
+	handlers.ShortenLinkBatch(h.ctx, writer, request, h.config, h.storage, h.logger)
 }
 
 func (h *handler) checkDatabaseConnection(writer http.ResponseWriter, request *http.Request) {
-	handlers.CheckDatabaseConnection(writer, request, h.storage, h.logger)
+	handlers.CheckDatabaseConnection(h.ctx, writer, request, h.storage, h.logger)
 }
 
 type middleware struct {
@@ -62,7 +64,7 @@ func Start() error {
 	if err != nil {
 		return err
 	}
-	h := handler{storage: s, config: c, logger: l}
+	h := handler{storage: s, config: c, logger: l, ctx: context.Background()}
 	m := middleware{logger: l}
 
 	router := chi.NewRouter()

@@ -2,6 +2,7 @@ package filestorage
 
 import (
 	"bufio"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -25,7 +26,7 @@ type fileLine struct {
 	OriginalURL string `json:"original_url"`
 }
 
-func (s *fileStorage) Put(key, value string) error {
+func (s *fileStorage) Put(ctx context.Context, key, value string) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	file, err := os.OpenFile(s.filePath, os.O_WRONLY|os.O_APPEND, 0666)
@@ -52,20 +53,20 @@ func (s *fileStorage) Put(key, value string) error {
 	return nil
 }
 
-func (s *fileStorage) Get(key string) (string, error) {
+func (s *fileStorage) Get(ctx context.Context, key string) (string, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	val := s.links[key]
 	return val, nil
 }
 
-func (s *fileStorage) Ping() error {
+func (s *fileStorage) Ping(ctx context.Context) error {
 	return errors.New("there is no ping method for file storage")
 }
 
-func (s *fileStorage) Batch(urls models.ShortenBatchRequest) error {
+func (s *fileStorage) Batch(ctx context.Context, urls models.ShortenBatchRequest) error {
 	for _, url := range urls {
-		if err := s.Put(hash.Generate([]byte(url.OriginalURL)), url.OriginalURL); err != nil {
+		if err := s.Put(ctx, hash.Generate([]byte(url.OriginalURL)), url.OriginalURL); err != nil {
 			return err
 		}
 	}

@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"context"
 	"shorty/internal/app/config"
 	"shorty/internal/app/models"
 	"shorty/internal/app/storage/dbstorage"
@@ -9,15 +10,15 @@ import (
 )
 
 type Storage interface {
-	Put(key, value string) error
-	Get(key string) (string, error)
-	Ping() error
-	Batch(urls models.ShortenBatchRequest) error
+	Put(ctx context.Context, key, value string) error
+	Get(ctx context.Context, key string) (string, error)
+	Ping(ctx context.Context) error
+	Batch(ctx context.Context, urls models.ShortenBatchRequest) error
 }
 
 func NewStorage(config config.Config) (Storage, error) {
 	if config.DatabaseDSN != "" {
-		s, err := dbstorage.CreateDBStorage(config.DatabaseDSN)
+		s, err := dbstorage.CreateDBStorage(context.Background(), config.DatabaseDSN)
 		return s, err
 	} else if config.FileStoragePath != "" {
 		s, err := filestorage.CreateFileStorage(config.FileStoragePath)
