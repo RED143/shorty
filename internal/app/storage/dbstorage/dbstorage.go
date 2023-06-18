@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"shorty/internal/app/hash"
 	"shorty/internal/app/models"
+	"strings"
 	"time"
 )
 
@@ -84,12 +85,18 @@ func (s *storage) Batch(ctx context.Context, urls models.ShortenBatchRequest) er
 		return fmt.Errorf("failed to begin transaction: %v", err)
 	}
 
-	for _, url := range urls {
-		_, err := tx.ExecContext(ctx, "INSERT INTO links (hash, url) VALUES ($1, $2)", hash.Generate([]byte(url.OriginalURL)), url.OriginalURL)
-		if err != nil {
-			tx.Rollback()
-			return fmt.Errorf("failed to insert line in table with url=%s: %v", url.OriginalURL, err)
-		}
+	values := make([]string, len(urls))
+
+	for index, url := range urls {
+		values[index] = "('" + hash.Generate([]byte(url.OriginalURL)) + "', '" + url.OriginalURL + "')"
+	}
+
+	query := "INSERT INTO links (hash, url) VALUES " + strings.Join(values, ", ")
+
+	_, err = tx.ExecContext(ctx, query)
+	if err != nil {
+		tx.Rollback()
+		return fmt.Errorf("failed to insert line in table with %v", err)
 	}
 
 	return tx.Commit()
