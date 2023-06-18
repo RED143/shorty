@@ -26,10 +26,6 @@ func (h *handler) getLink(writer http.ResponseWriter, request *http.Request) {
 	handlers.GetLink(h.ctx, writer, request, hash, h.storage, h.logger)
 }
 
-func (h *handler) shortifyLink(writer http.ResponseWriter, request *http.Request) {
-	handlers.Shortify(h.ctx, writer, request, h.config, h.storage, h.logger)
-}
-
 func (h *handler) shortenLink(writer http.ResponseWriter, request *http.Request) {
 	handlers.ShortenLink(h.ctx, writer, request, h.config, h.storage, h.logger)
 }
@@ -72,7 +68,7 @@ func Start() error {
 	router.Use(m.withLogging)
 	router.Use(m.withCompressing)
 
-	router.Post("/", h.shortifyLink)
+	router.Post("/", h.shortenLink)
 	router.Post("/api/shorten", h.shortenLink)
 	router.Post("/api/shorten/batch", h.shortenLinkBatch)
 	router.Get("/ping", h.checkDatabaseConnection)
