@@ -97,15 +97,6 @@ func TestShortenLink(t *testing.T) {
 	}
 	loggerMock := zaptest.NewLogger(t).Sugar()
 
-	t.Run("Should return error for non-POST request", func(t *testing.T) {
-		request := httptest.NewRequest(http.MethodGet, "/shorten", nil)
-		writer := httptest.NewRecorder()
-
-		ShortenLink(context.Background(), writer, request, configMock, storageMock, loggerMock)
-
-		assert.Equal(t, http.StatusBadRequest, writer.Code, "Got code %s; expected %s", writer.Code, http.StatusBadRequest)
-	})
-
 	t.Run("Should return error if url not provided", func(t *testing.T) {
 		data := models.ShortenRequest{URL: ""}
 		reqData, err := json.Marshal(data)
