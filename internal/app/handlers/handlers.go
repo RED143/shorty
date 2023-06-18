@@ -16,11 +16,6 @@ import (
 )
 
 func Shortify(ctx context.Context, writer http.ResponseWriter, request *http.Request, cfg config.Config, str storage.Storage, logger *zap.SugaredLogger) {
-	if request.Method != http.MethodPost {
-		http.Error(writer, "Only POST requests are allowed", http.StatusBadRequest)
-		return
-	}
-
 	body, err := io.ReadAll(request.Body)
 	if err != nil {
 		http.Error(writer, "Internal server error", http.StatusInternalServerError)
@@ -64,13 +59,7 @@ func Shortify(ctx context.Context, writer http.ResponseWriter, request *http.Req
 }
 
 func GetLink(ctx context.Context, writer http.ResponseWriter, request *http.Request, hash string, str storage.Storage, logger *zap.SugaredLogger) {
-	if request.Method != http.MethodGet {
-		http.Error(writer, "Only GET requests are allowed", http.StatusBadRequest)
-		return
-	}
-
 	link, err := str.Get(ctx, hash)
-
 	if err != nil {
 		http.Error(writer, "Internal server error", http.StatusInternalServerError)
 		logger.Errorw("failed to write response", "err", err)
@@ -87,11 +76,6 @@ func GetLink(ctx context.Context, writer http.ResponseWriter, request *http.Requ
 }
 
 func ShortenLink(ctx context.Context, writer http.ResponseWriter, request *http.Request, cfg config.Config, str storage.Storage, logger *zap.SugaredLogger) {
-	if request.Method != http.MethodPost {
-		http.Error(writer, "Only POST requests are allowed", http.StatusBadRequest)
-		return
-	}
-
 	var req models.ShortenRequest
 	dec := json.NewDecoder(request.Body)
 	if err := dec.Decode(&req); err != nil {
@@ -138,11 +122,6 @@ func ShortenLink(ctx context.Context, writer http.ResponseWriter, request *http.
 }
 
 func ShortenLinkBatch(ctx context.Context, writer http.ResponseWriter, request *http.Request, cfg config.Config, str storage.Storage, logger *zap.SugaredLogger) {
-	if request.Method != http.MethodPost {
-		http.Error(writer, "Only POST requests are allowed", http.StatusBadRequest)
-		return
-	}
-
 	var urls models.ShortenBatchRequest
 	dec := json.NewDecoder(request.Body)
 	if err := dec.Decode(&urls); err != nil {
@@ -180,11 +159,6 @@ func ShortenLinkBatch(ctx context.Context, writer http.ResponseWriter, request *
 }
 
 func CheckDatabaseConnection(ctx context.Context, writer http.ResponseWriter, request *http.Request, str storage.Storage, logger *zap.SugaredLogger) {
-	if request.Method != http.MethodGet {
-		http.Error(writer, "Only GET requests are allowed", http.StatusBadRequest)
-		return
-	}
-
 	if err := str.Ping(ctx); err != nil {
 		http.Error(writer, "Internal server error", http.StatusInternalServerError)
 		logger.Errorw("Failed to connect database", "err", err)
