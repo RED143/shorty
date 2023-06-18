@@ -19,7 +19,7 @@ type storage struct {
 func CreateDBStorage(ctx context.Context, databaseDSN string) (*storage, error) {
 	db, err := sql.Open("pgx", databaseDSN)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to open connection to database with %s, %v", databaseDSN, err)
 	}
 
 	if err := setUpDatabase(ctx, db); err != nil {
@@ -37,7 +37,7 @@ func (s *storage) Get(ctx context.Context, key string) (string, error) {
 		return "", fmt.Errorf("failed to open connection to db: %v", err)
 	}
 	defer conn.Close()
-	row := conn.QueryRowContext(context.TODO(), "SELECT url FROM links WHERE hash = $1", key)
+	row := conn.QueryRowContext(ctx, "SELECT url FROM links WHERE hash = $1", key)
 	var url string
 	if err := row.Scan(&url); err != nil {
 		return "", fmt.Errorf("failed to scan row: %v", err)
@@ -79,7 +79,6 @@ func (s *storage) Ping(ctx context.Context) error {
 }
 
 func (s *storage) Batch(ctx context.Context, urls models.ShortenBatchRequest) error {
-	fmt.Println("db storage batching!!!", urls)
 	tx, err := s.db.Begin()
 	if err != nil {
 		return fmt.Errorf("failed to begin transaction: %v", err)
