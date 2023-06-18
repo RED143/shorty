@@ -26,8 +26,6 @@ type fileLine struct {
 }
 
 func (s *fileStorage) Put(ctx context.Context, key, value string) error {
-	s.mu.Lock()
-	defer s.mu.Unlock()
 	file, err := os.OpenFile(s.filePath, os.O_WRONLY|os.O_APPEND, 0666)
 	if err != nil {
 		return fmt.Errorf("failed to open the file \"%s\": %v", s.filePath, err)
@@ -47,6 +45,8 @@ func (s *fileStorage) Put(ctx context.Context, key, value string) error {
 		return fmt.Errorf("failed to save data to file: %v", err)
 	}
 
+	s.mu.Lock()
+	defer s.mu.Unlock()
 	s.links[key] = value
 
 	return nil
