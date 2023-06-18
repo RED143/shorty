@@ -15,49 +15,6 @@ import (
 	"shorty/internal/app/storage/dbstorage"
 )
 
-func Shortify(ctx context.Context, writer http.ResponseWriter, request *http.Request, cfg config.Config, str storage.Storage, logger *zap.SugaredLogger) {
-	body, err := io.ReadAll(request.Body)
-	if err != nil {
-		http.Error(writer, "Internal server error", http.StatusInternalServerError)
-		logger.Errorw("failed to parse request body", "err", err)
-		return
-	}
-
-	if len(body) == 0 {
-		http.Error(writer, "URL should be provided", http.StatusBadRequest)
-		return
-	}
-
-	hashString := hash.Generate(body)
-	err = str.Put(ctx, hashString, string(body))
-	alreadySaved := errors.Is(err, dbstorage.ErrConflict)
-	if err != nil && !alreadySaved {
-		http.Error(writer, "Internal server error", http.StatusInternalServerError)
-		logger.Errorw("failed to save url", "err", err)
-		return
-	}
-
-	fullURL, err := url.JoinPath(cfg.BaseAddress, hashString)
-	if err != nil {
-		http.Error(writer, "Internal server error", http.StatusInternalServerError)
-		logger.Errorw("failed to generate path", "err", err)
-		return
-	}
-
-	statusCode := http.StatusCreated
-	if alreadySaved {
-		statusCode = http.StatusConflict
-	}
-	writer.Header().Set("content-type", "plain/text")
-	writer.WriteHeader(statusCode)
-	_, err = writer.Write([]byte(fullURL))
-	if err != nil {
-		http.Error(writer, "Internal server error", http.StatusInternalServerError)
-		logger.Errorw("failed to write response", "err", err)
-		return
-	}
-}
-
 func GetLink(ctx context.Context, writer http.ResponseWriter, request *http.Request, hash string, str storage.Storage, logger *zap.SugaredLogger) {
 	link, err := str.Get(ctx, hash)
 	if err != nil {
@@ -77,11 +34,23 @@ func GetLink(ctx context.Context, writer http.ResponseWriter, request *http.Requ
 
 func ShortenLink(ctx context.Context, writer http.ResponseWriter, request *http.Request, cfg config.Config, str storage.Storage, logger *zap.SugaredLogger) {
 	var req models.ShortenRequest
-	dec := json.NewDecoder(request.Body)
-	if err := dec.Decode(&req); err != nil {
-		http.Error(writer, "Internal server error", http.StatusInternalServerError)
-		logger.Errorw("cannot decode request JSON body", "err", err)
-		return
+	isJSONRequest := request.RequestURI == "/api/shorten"
+
+	if isJSONRequest {
+		dec := json.NewDecoder(request.Body)
+		if err := dec.Decode(&req); err != nil {
+			http.Error(writer, "Internal server error", http.StatusInternalServerError)
+			logger.Errorw("cannot decode request JSON body", "err", err)
+			return
+		}
+	} else {
+		body, err := io.ReadAll(request.Body)
+		if err != nil {
+			http.Error(writer, "Internal server error", http.StatusInternalServerError)
+			logger.Errorw("failed to parse request body", "err", err)
+			return
+		}
+		req.URL = string(body)
 	}
 
 	if req.URL == "" {
@@ -105,20 +74,32 @@ func ShortenLink(ctx context.Context, writer http.ResponseWriter, request *http.
 		return
 	}
 
-	resp := models.ShortenResponse{Result: result}
-
 	statusCode := http.StatusCreated
 	if alreadySaved {
 		statusCode = http.StatusConflict
 	}
-	writer.Header().Set("content-type", "application/json")
-	writer.WriteHeader(statusCode)
-	enc := json.NewEncoder(writer)
-	if err := enc.Encode(resp); err != nil {
-		http.Error(writer, "Internal server error", http.StatusInternalServerError)
-		logger.Errorw("error encoding response", "err", err)
-		return
+
+	if isJSONRequest {
+		resp := models.ShortenResponse{Result: result}
+		writer.Header().Set("content-type", "application/json")
+		writer.WriteHeader(statusCode)
+		enc := json.NewEncoder(writer)
+		if err := enc.Encode(resp); err != nil {
+			http.Error(writer, "Internal server error", http.StatusInternalServerError)
+			logger.Errorw("error encoding response", "err", err)
+			return
+		}
+	} else {
+		writer.Header().Set("content-type", "plain/text")
+		writer.WriteHeader(statusCode)
+		_, err = writer.Write([]byte(result))
+		if err != nil {
+			http.Error(writer, "Internal server error", http.StatusInternalServerError)
+			logger.Errorw("failed to write response", "err", err)
+			return
+		}
 	}
+
 }
 
 func ShortenLinkBatch(ctx context.Context, writer http.ResponseWriter, request *http.Request, cfg config.Config, str storage.Storage, logger *zap.SugaredLogger) {
