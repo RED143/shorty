@@ -2,7 +2,6 @@ package mapstorage
 
 import (
 	"context"
-	"errors"
 	"shorty/internal/app/hash"
 	"shorty/internal/app/models"
 	"sync"
@@ -28,7 +27,7 @@ func (s *mapStorage) Put(ctx context.Context, key, value string) error {
 }
 
 func (s *mapStorage) Ping(ctx context.Context) error {
-	return errors.New("there is no ping method for map storage")
+	return nil
 }
 
 func (s *mapStorage) Batch(ctx context.Context, urls models.ShortenBatchRequest) error {

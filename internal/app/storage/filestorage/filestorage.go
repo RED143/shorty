@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"os"
 	"shorty/internal/app/hash"
@@ -61,7 +60,7 @@ func (s *fileStorage) Get(ctx context.Context, key string) (string, error) {
 }
 
 func (s *fileStorage) Ping(ctx context.Context) error {
-	return errors.New("there is no ping method for file storage")
+	return nil
 }
 
 func (s *fileStorage) Batch(ctx context.Context, urls models.ShortenBatchRequest) error {
