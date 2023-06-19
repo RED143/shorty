@@ -14,6 +14,7 @@ type Storage interface {
 	Get(ctx context.Context, key string) (string, error)
 	Ping(ctx context.Context) error
 	Batch(ctx context.Context, urls models.ShortenBatchRequest) error
+	Close() error
 }
 
 func NewStorage(config config.Config) (Storage, error) {

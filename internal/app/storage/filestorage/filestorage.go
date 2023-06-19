@@ -72,6 +72,10 @@ func (s *fileStorage) Batch(ctx context.Context, urls models.ShortenBatchRequest
 	return nil
 }
 
+func (s *fileStorage) Close() error {
+	return nil
+}
+
 func CreateFileStorage(filePath string) (*fileStorage, error) {
 	file, err := os.OpenFile(filePath, os.O_RDONLY|os.O_CREATE, 0666)
 	if err != nil {

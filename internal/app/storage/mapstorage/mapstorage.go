@@ -39,6 +39,10 @@ func (s *mapStorage) Batch(ctx context.Context, urls models.ShortenBatchRequest)
 	return nil
 }
 
+func (s *mapStorage) Close() error {
+	return nil
+}
+
 func CreateMapStorage() (*mapStorage, error) {
 	s := &mapStorage{
 		mu:    &sync.Mutex{},

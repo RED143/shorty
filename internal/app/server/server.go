@@ -76,6 +76,9 @@ func Start() error {
 
 	l.Infow("Starting server", "address", c.ServerAddress)
 	if err := http.ListenAndServe(c.ServerAddress, router); err != nil {
+		if dbError := s.Close(); dbError != nil {
+			return dbError
+		}
 		return err
 	}
 	return nil
