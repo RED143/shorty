@@ -103,6 +103,14 @@ func (s *storage) Batch(ctx context.Context, urls models.ShortenBatchRequest) er
 	return tx.Commit()
 }
 
+func (s *storage) Close() error {
+	err := s.db.Close()
+	if err != nil {
+		return fmt.Errorf("failed to close db: %v", err)
+	}
+	return nil
+}
+
 func setUpDatabase(ctx context.Context, db *sql.DB) error {
 	conn, err := db.Conn(ctx)
 	if err != nil {
