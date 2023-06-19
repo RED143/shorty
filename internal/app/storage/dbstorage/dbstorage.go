@@ -52,18 +52,22 @@ func (s *storage) Put(ctx context.Context, key, value string) error {
 	if err != nil {
 		return fmt.Errorf("failed to open connection to db: %w", err)
 	}
+	defer conn.Close()
 
 	result, err := conn.ExecContext(ctx, "INSERT INTO links (hash, url) VALUES ($1, $2) ON CONFLICT (url) DO NOTHING", key, value)
 	if err != nil {
+		conn.Close()
 		return fmt.Errorf("failed to insert row: %v", err)
 	}
 
 	count, err := result.RowsAffected()
 	if err != nil {
+		conn.Close()
 		return fmt.Errorf("failed to count affected rows %v", err)
 	}
 
 	if count == 0 {
+		conn.Close()
 		return ErrConflict
 	}
 
