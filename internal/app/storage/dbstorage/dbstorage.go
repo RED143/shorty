@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"shorty/internal/app/hash"
 	"shorty/internal/app/models"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -87,13 +88,13 @@ func (s *storage) Batch(ctx context.Context, urls models.ShortenBatchRequest) er
 
 	values := make([]string, len(urls))
 
-	for index, url := range urls {
-		values[index] = "('" + hash.Generate([]byte(url.OriginalURL)) + "', '" + url.OriginalURL + "')"
+	for index := range urls {
+		values[index] = "( $" + strconv.Itoa(2*index+1) + ", $" + strconv.Itoa(2*index+2) + " )"
 	}
 
 	query := "INSERT INTO links (hash, url) VALUES " + strings.Join(values, ", ")
 
-	_, err = tx.ExecContext(ctx, query)
+	_, err = tx.ExecContext(ctx, query, generateQueryKeys(urls)...)
 	if err != nil {
 		tx.Rollback()
 		return fmt.Errorf("failed to insert line in table with %v", err)
@@ -119,4 +120,12 @@ func setUpDatabase(ctx context.Context, db *sql.DB) error {
 		return fmt.Errorf("failed to set index: %v", err)
 	}
 	return nil
+}
+
+func generateQueryKeys(urls models.ShortenBatchRequest) []any {
+	keys := []any{}
+	for _, row := range urls {
+		keys = append(keys, hash.Generate([]byte(row.OriginalURL)), row.OriginalURL)
+	}
+	return keys
 }
