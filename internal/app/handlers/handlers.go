@@ -35,6 +35,8 @@ func GetLink(ctx context.Context, writer http.ResponseWriter, request *http.Requ
 func ShortenLink(ctx context.Context, writer http.ResponseWriter, request *http.Request, cfg config.Config, str storage.Storage, logger *zap.SugaredLogger) {
 	var req models.ShortenRequest
 	isJSONRequest := request.RequestURI == "/api/shorten"
+	requestContext := request.Context()
+	userId := requestContext.Value("userId").(int)
 
 	if isJSONRequest {
 		dec := json.NewDecoder(request.Body)
@@ -59,7 +61,7 @@ func ShortenLink(ctx context.Context, writer http.ResponseWriter, request *http.
 	}
 
 	hashString := hash.Generate([]byte(req.URL))
-	err := str.Put(ctx, hashString, req.URL)
+	err := str.Put(ctx, hashString, req.URL, userId)
 	alreadySaved := errors.Is(err, dbstorage.ErrConflict)
 	if err != nil && !alreadySaved {
 		http.Error(writer, "Internal server error", http.StatusInternalServerError)

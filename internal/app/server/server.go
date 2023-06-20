@@ -52,7 +52,7 @@ func (m *middleware) withCompressing(h http.Handler) http.Handler {
 }
 
 func (m *middleware) withAuthorization(h http.Handler) http.Handler {
-	return authorization.WithAuthorization(h)
+	return authorization.WithAuthorization(h, m.logger)
 }
 
 func Start() error {
