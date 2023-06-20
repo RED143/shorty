@@ -8,6 +8,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"shorty/internal/app/authorization"
 	"shorty/internal/app/config"
 	"shorty/internal/app/hash"
 	"shorty/internal/app/models"
@@ -36,7 +37,7 @@ func ShortenLink(ctx context.Context, writer http.ResponseWriter, request *http.
 	var req models.ShortenRequest
 	isJSONRequest := request.RequestURI == "/api/shorten"
 	requestContext := request.Context()
-	userId := requestContext.Value("userId").(int)
+	userID := requestContext.Value(authorization.ContextKey("userID"))
 
 	if isJSONRequest {
 		dec := json.NewDecoder(request.Body)
@@ -61,7 +62,7 @@ func ShortenLink(ctx context.Context, writer http.ResponseWriter, request *http.
 	}
 
 	hashString := hash.Generate([]byte(req.URL))
-	err := str.Put(ctx, hashString, req.URL, userId)
+	err := str.Put(ctx, hashString, req.URL, userID.(string))
 	alreadySaved := errors.Is(err, dbstorage.ErrConflict)
 	if err != nil && !alreadySaved {
 		http.Error(writer, "Internal server error", http.StatusInternalServerError)
@@ -105,6 +106,9 @@ func ShortenLink(ctx context.Context, writer http.ResponseWriter, request *http.
 }
 
 func ShortenLinkBatch(ctx context.Context, writer http.ResponseWriter, request *http.Request, cfg config.Config, str storage.Storage, logger *zap.SugaredLogger) {
+	requestContext := request.Context()
+	userID := requestContext.Value(authorization.ContextKey("userID"))
+
 	var urls models.ShortenBatchRequest
 	dec := json.NewDecoder(request.Body)
 	if err := dec.Decode(&urls); err != nil {
@@ -113,7 +117,7 @@ func ShortenLinkBatch(ctx context.Context, writer http.ResponseWriter, request *
 		return
 	}
 
-	err := str.Batch(ctx, urls)
+	err := str.Batch(ctx, urls, userID.(string))
 	if err != nil {
 		http.Error(writer, "Internal server error", http.StatusInternalServerError)
 		logger.Errorw("Failed to batch saving", "err", err)
@@ -148,4 +152,41 @@ func CheckDatabaseConnection(ctx context.Context, writer http.ResponseWriter, re
 		return
 	}
 	writer.WriteHeader(http.StatusOK)
+}
+
+func GetUserURLs(ctx context.Context, writer http.ResponseWriter, request *http.Request, cfg config.Config, str storage.Storage, logger *zap.SugaredLogger) {
+	requestContext := request.Context()
+	userID := requestContext.Value(authorization.ContextKey("userID"))
+
+	urls, err := str.UserURLs(ctx, userID.(string))
+	if err != nil {
+		http.Error(writer, "Internal server error", http.StatusInternalServerError)
+		logger.Errorw("failed to get user urls", "err", err)
+		return
+	}
+
+	var response []models.UserURL
+
+	for _, u := range urls {
+		shortURL, err := url.JoinPath(cfg.BaseAddress, u.Hash)
+		if err != nil {
+			http.Error(writer, "Internal server error", http.StatusInternalServerError)
+			logger.Errorw("failed to generate path", "err", err)
+			return
+		}
+		response = append(response, models.UserURL{ShortURL: shortURL, OriginalURL: u.URL})
+	}
+
+	writer.Header().Set("content-type", "application/json")
+	if len(response) == 0 {
+		writer.WriteHeader(http.StatusNoContent)
+	} else {
+		writer.WriteHeader(http.StatusOK)
+		enc := json.NewEncoder(writer)
+		if err := enc.Encode(response); err != nil {
+			http.Error(writer, "Internal server error", http.StatusInternalServerError)
+			logger.Errorw("error encoding response", "err", err)
+			return
+		}
+	}
 }

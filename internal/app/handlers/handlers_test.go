@@ -6,6 +6,7 @@ import (
 	"go.uber.org/zap/zaptest"
 	"net/http"
 	"net/http/httptest"
+	"shorty/internal/app/authorization"
 	"shorty/internal/app/config"
 	"shorty/internal/app/storage"
 	"strings"
@@ -65,10 +66,11 @@ func TestShortenLink(t *testing.T) {
 		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			request := httptest.NewRequest(tc.method, "/", strings.NewReader(tc.body))
+			ctx := context.WithValue(request.Context(), authorization.ContextKey("userID"), "1")
 			request.Header.Set("Content-Type", tc.contentType)
 			writer := httptest.NewRecorder()
 
-			ShortenLink(context.Background(), writer, request, configMock, storageMock, loggerMock)
+			ShortenLink(context.Background(), writer, request.WithContext(ctx), configMock, storageMock, loggerMock)
 
 			assert.Equal(t, tc.expectedCode, writer.Code, "Got code %s; expected %s", writer.Code, tc.expectedCode)
 		})

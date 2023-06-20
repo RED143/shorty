@@ -39,6 +39,10 @@ func (h *handler) checkDatabaseConnection(writer http.ResponseWriter, request *h
 	handlers.CheckDatabaseConnection(h.ctx, writer, request, h.storage, h.logger)
 }
 
+func (h *handler) getUserURLs(writer http.ResponseWriter, request *http.Request) {
+	handlers.GetUserURLs(h.ctx, writer, request, h.config, h.storage, h.logger)
+}
+
 type middleware struct {
 	logger *zap.SugaredLogger
 }
@@ -78,6 +82,7 @@ func Start() error {
 	router.Post("/", h.shortenLink)
 	router.Post("/api/shorten", h.shortenLink)
 	router.Post("/api/shorten/batch", h.shortenLinkBatch)
+	router.Get("/api/user/urls", h.getUserURLs)
 	router.Get("/ping", h.checkDatabaseConnection)
 	router.Get("/{hash}", h.getLink)
 
