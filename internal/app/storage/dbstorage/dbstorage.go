@@ -47,14 +47,14 @@ func (s *storage) Get(ctx context.Context, key string) (string, error) {
 	return url, nil
 }
 
-func (s *storage) Put(ctx context.Context, key, value string) error {
+func (s *storage) Put(ctx context.Context, key, value string, userId int) error {
 	conn, err := s.db.Conn(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to open connection to db: %w", err)
 	}
 	defer conn.Close()
 
-	result, err := conn.ExecContext(ctx, "INSERT INTO links (hash, url) VALUES ($1, $2) ON CONFLICT (url) DO NOTHING", key, value)
+	result, err := conn.ExecContext(ctx, "INSERT INTO links (hash, url, user_id) VALUES ($1, $2, $3) ON CONFLICT (url) DO NOTHING", key, value, userId)
 	if err != nil {
 		conn.Close()
 		return fmt.Errorf("failed to insert row: %v", err)
@@ -122,7 +122,7 @@ func setUpDatabase(ctx context.Context, db *sql.DB) error {
 	}
 	defer conn.Close()
 
-	_, err = conn.ExecContext(ctx, `CREATE TABLE IF NOT EXISTS links (id SERIAL PRIMARY KEY, hash VARCHAR(8), url VARCHAR(1024))`)
+	_, err = conn.ExecContext(ctx, `CREATE TABLE IF NOT EXISTS links (id SERIAL PRIMARY KEY, hash VARCHAR(8), url VARCHAR(1024), user_id int)`)
 	if err != nil {
 		return fmt.Errorf("failed to create table: %w", err)
 	}

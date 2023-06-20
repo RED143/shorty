@@ -10,7 +10,7 @@ import (
 )
 
 type Storage interface {
-	Put(ctx context.Context, key, value string) error
+	Put(ctx context.Context, key, value string, id int) error
 	Get(ctx context.Context, key string) (string, error)
 	Ping(ctx context.Context) error
 	Batch(ctx context.Context, urls models.ShortenBatchRequest) error
