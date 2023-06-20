@@ -42,7 +42,6 @@ func Initialize() (*zap.SugaredLogger, error) {
 
 func WithLogging(h http.Handler, logger *zap.SugaredLogger) http.Handler {
 	logFn := func(w http.ResponseWriter, r *http.Request) {
-		start := time.Now()
 		responseData := &responseData{
 			status: 0,
 			size:   0,
@@ -51,8 +50,8 @@ func WithLogging(h http.Handler, logger *zap.SugaredLogger) http.Handler {
 			ResponseWriter: w,
 			responseData:   responseData,
 		}
+		start := time.Now()
 		h.ServeHTTP(&lw, r)
-
 		duration := time.Since(start)
 
 		logger.Infow("Request",

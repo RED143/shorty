@@ -25,7 +25,7 @@ type fileLine struct {
 	OriginalURL string `json:"original_url"`
 }
 
-func (s *fileStorage) Put(ctx context.Context, key, value string) error {
+func (s *fileStorage) Put(ctx context.Context, key, value string, userId int) error {
 	file, err := os.OpenFile(s.filePath, os.O_WRONLY|os.O_APPEND, 0666)
 	if err != nil {
 		return fmt.Errorf("failed to open the file \"%s\": %v", s.filePath, err)
@@ -65,7 +65,7 @@ func (s *fileStorage) Ping(ctx context.Context) error {
 
 func (s *fileStorage) Batch(ctx context.Context, urls models.ShortenBatchRequest) error {
 	for _, url := range urls {
-		if err := s.Put(ctx, hash.Generate([]byte(url.OriginalURL)), url.OriginalURL); err != nil {
+		if err := s.Put(ctx, hash.Generate([]byte(url.OriginalURL)), url.OriginalURL, 0); err != nil {
 			return err
 		}
 	}
