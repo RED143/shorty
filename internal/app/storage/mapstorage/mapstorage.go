@@ -19,7 +19,7 @@ func (s *mapStorage) Get(ctx context.Context, key string) (string, error) {
 	return val, nil
 }
 
-func (s *mapStorage) Put(ctx context.Context, key, value string, userId int) error {
+func (s *mapStorage) Put(ctx context.Context, key, value, userID string) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.links[key] = value
@@ -30,13 +30,17 @@ func (s *mapStorage) Ping(ctx context.Context) error {
 	return nil
 }
 
-func (s *mapStorage) Batch(ctx context.Context, urls models.ShortenBatchRequest) error {
+func (s *mapStorage) Batch(ctx context.Context, urls models.ShortenBatchRequest, userID string) error {
 	for _, url := range urls {
-		if err := s.Put(ctx, hash.Generate([]byte(url.OriginalURL)), url.OriginalURL, 0); err != nil {
+		if err := s.Put(ctx, hash.Generate([]byte(url.OriginalURL)), url.OriginalURL, userID); err != nil {
 			return err
 		}
 	}
 	return nil
+}
+
+func (s *mapStorage) UserURLs(ctx context.Context, userID string) ([]models.StorageURLsTODO, error) {
+	return nil, nil
 }
 
 func (s *mapStorage) Close() error {

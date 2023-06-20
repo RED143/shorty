@@ -5,31 +5,35 @@ import (
 	"errors"
 	"fmt"
 	"github.com/golang-jwt/jwt/v4"
+	"github.com/google/uuid"
 	"go.uber.org/zap"
 	"net/http"
 )
 
 type Claims struct {
 	jwt.RegisteredClaims
-	UserID int
+	UserID string
 }
 
-const SECRET_KEY = "shouldBeSavedInEnvFile"
+type ContextKey string
+
+const secret = "shouldBeSavedInEnvFile"
 
 func WithAuthorization(h http.Handler, logger *zap.SugaredLogger) http.Handler {
 	authorizationMiddleware := func(w http.ResponseWriter, r *http.Request) {
 		authToken, err := r.Cookie("AuthToken")
 		if err != nil {
 			if errors.Is(err, http.ErrNoCookie) {
-				token, err := generateJWTToken()
+				id := uuid.NewString()
+				token, err := generateJWTToken(id)
 				if err != nil {
 					logger.Errorw("Failed to get token string", "err", err)
 					w.WriteHeader(http.StatusInternalServerError)
 					return
 				}
-				cookie := &http.Cookie{Name: "AuthToken", Value: token}
-				http.SetCookie(w, cookie)
-				h.ServeHTTP(w, r)
+				ctx := context.WithValue(r.Context(), ContextKey("userID"), id)
+				setAuthCookie(w, token)
+				h.ServeHTTP(w, r.WithContext(ctx))
 				return
 			} else {
 				logger.Errorw("Failed to get AuthToken", "err", err)
@@ -38,26 +42,27 @@ func WithAuthorization(h http.Handler, logger *zap.SugaredLogger) http.Handler {
 			}
 		}
 
-		userId := GetUserIdFromJWTToken(authToken.Value)
-		if userId == -1 {
-			logger.Errorw("Failed to parse userId from jwt token")
+		userID := GetUserIDFromJWTToken(authToken.Value)
+		if userID == "" {
+			logger.Errorw("Failed to parse userID from jwt token")
 			w.WriteHeader(http.StatusUnauthorized)
 			return
 		}
 
-		ctx := context.WithValue(r.Context(), "userId", userId)
+		ctx := context.WithValue(r.Context(), ContextKey("userID"), userID)
+		setAuthCookie(w, authToken.Value)
 		h.ServeHTTP(w, r.WithContext(ctx))
 	}
 
 	return http.HandlerFunc(authorizationMiddleware)
 }
 
-func generateJWTToken() (string, error) {
+func generateJWTToken(id string) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, Claims{
-		UserID: 1,
+		UserID: id,
 	})
 
-	tokenString, err := token.SignedString([]byte(SECRET_KEY))
+	tokenString, err := token.SignedString([]byte(secret))
 	if err != nil {
 		return "", fmt.Errorf("failed to generate token string: %v", err)
 	}
@@ -66,23 +71,28 @@ func generateJWTToken() (string, error) {
 
 }
 
-func GetUserIdFromJWTToken(tokenString string) int {
+func GetUserIDFromJWTToken(tokenString string) string {
 	claims := &Claims{}
 	token, err := jwt.ParseWithClaims(tokenString, claims,
 		func(t *jwt.Token) (interface{}, error) {
 			if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
 				return nil, fmt.Errorf("unexpected signing method: %v", t.Header["alg"])
 			}
-			return []byte(SECRET_KEY), nil
+			return []byte(secret), nil
 		})
 
 	if err != nil {
-		return -1
+		return ""
 	}
 
 	if !token.Valid {
-		return -1
+		return ""
 	}
 
 	return claims.UserID
+}
+
+func setAuthCookie(w http.ResponseWriter, token string) {
+	cookie := &http.Cookie{Name: "AuthToken", Value: token}
+	http.SetCookie(w, cookie)
 }
