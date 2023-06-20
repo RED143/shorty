@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"net/http"
+	"shorty/internal/app/authorization"
 	"shorty/internal/app/compress"
 	"shorty/internal/app/config"
 	"shorty/internal/app/handlers"
@@ -50,6 +51,10 @@ func (m *middleware) withCompressing(h http.Handler) http.Handler {
 	return compress.WithCompressing(h, m.logger)
 }
 
+func (m *middleware) withAuthorization(h http.Handler) http.Handler {
+	return authorization.WithAuthorization(h)
+}
+
 func Start() error {
 	l, err := logger.Initialize()
 	if err != nil {
@@ -67,6 +72,7 @@ func Start() error {
 	router := chi.NewRouter()
 
 	router.Use(m.withLogging)
+	router.Use(m.withAuthorization)
 	router.Use(m.withCompressing)
 
 	router.Post("/", h.shortenLink)
