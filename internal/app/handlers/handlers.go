@@ -160,7 +160,7 @@ func ShortenLinkBatch(ctx context.Context, writer http.ResponseWriter, request *
 	}
 }
 
-func CheckDatabaseConnection(ctx context.Context, writer http.ResponseWriter, request *http.Request, str storage.Storage, logger *zap.SugaredLogger) {
+func CheckDatabaseConnection(ctx context.Context, writer http.ResponseWriter, str storage.Storage, logger *zap.SugaredLogger) {
 	if err := str.Ping(ctx); err != nil {
 		http.Error(writer, "Internal server error", http.StatusInternalServerError)
 		logger.Errorw("Failed to connect database", "err", err)
@@ -169,7 +169,7 @@ func CheckDatabaseConnection(ctx context.Context, writer http.ResponseWriter, re
 	writer.WriteHeader(http.StatusOK)
 }
 
-func GetUserURLs(ctx context.Context, writer http.ResponseWriter, request *http.Request, cfg config.Config, str storage.Storage, logger *zap.SugaredLogger) {
+func GetUserURLs(ctx context.Context, writer http.ResponseWriter, request *http.Request, str storage.Storage, logger *zap.SugaredLogger) {
 	requestContext := request.Context()
 	userID := requestContext.Value(authorization.ContextKey("userID"))
 

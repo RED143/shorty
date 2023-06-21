@@ -35,11 +35,11 @@ func (h *handler) shortenLinkBatch(writer http.ResponseWriter, request *http.Req
 }
 
 func (h *handler) checkDatabaseConnection(writer http.ResponseWriter, request *http.Request) {
-	handlers.CheckDatabaseConnection(h.ctx, writer, request, h.storage, h.logger)
+	handlers.CheckDatabaseConnection(h.ctx, writer, h.storage, h.logger)
 }
 
 func (h *handler) getUserURLs(writer http.ResponseWriter, request *http.Request) {
-	handlers.GetUserURLs(h.ctx, writer, request, h.config, h.storage, h.logger)
+	handlers.GetUserURLs(h.ctx, writer, request, h.storage, h.logger)
 }
 
 type middleware struct {
