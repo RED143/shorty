@@ -113,7 +113,7 @@ func (s *dbstorage) UserURLs(ctx context.Context, userID string) ([]models.UserU
 	}
 	defer conn.Close()
 
-	rows, err := conn.QueryContext(ctx, "SELECT hash, url FROM links WHERE user_id = $1", userID)
+	rows, err := conn.QueryContext(ctx, "SELECT short_url, original_url FROM links WHERE user_id = $1", userID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get users rows with userID=%s: %v", userID, err)
 	}

@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"go.uber.org/zap"
 	"io"
 	"net/http"
@@ -19,7 +18,6 @@ import (
 
 func GetLink(ctx context.Context, writer http.ResponseWriter, request *http.Request, cfg config.Config, str storage.Storage, logger *zap.SugaredLogger) {
 	shortURL, err := url.JoinPath(cfg.BaseAddress, request.URL.Path)
-	fmt.Println(shortURL)
 	if err != nil {
 		http.Error(writer, "Internal server error", http.StatusInternalServerError)
 		logger.Errorw("failed to get shortURL", "err", err)
