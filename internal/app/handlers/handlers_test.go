@@ -84,13 +84,12 @@ func TestGetLink(t *testing.T) {
 		t.Errorf("failed to setup storage %v", err)
 	}
 	loggerMock := zaptest.NewLogger(t).Sugar()
-	hash := "asdf"
 
 	t.Run("Should return error for non-GET request", func(t *testing.T) {
 		request := httptest.NewRequest(http.MethodPost, "/asdf", nil)
 		writer := httptest.NewRecorder()
 
-		GetLink(context.Background(), writer, request, hash, storageMock, loggerMock)
+		GetLink(context.Background(), writer, request, configMock, storageMock, loggerMock)
 
 		assert.Equal(t, http.StatusBadRequest, writer.Code, "Got code %s; expected %s", writer.Code, http.StatusBadRequest)
 	})
@@ -99,7 +98,7 @@ func TestGetLink(t *testing.T) {
 		request := httptest.NewRequest(http.MethodGet, "/asdf", nil)
 		writer := httptest.NewRecorder()
 
-		GetLink(context.Background(), writer, request, hash, storageMock, loggerMock)
+		GetLink(context.Background(), writer, request, configMock, storageMock, loggerMock)
 
 		assert.Equal(t, http.StatusBadRequest, writer.Code, "Got code %s; expected %s", writer.Code, http.StatusBadRequest)
 	})
