@@ -23,8 +23,7 @@ type handler struct {
 }
 
 func (h *handler) getLink(writer http.ResponseWriter, request *http.Request) {
-	hash := chi.URLParam(request, "hash")
-	handlers.GetLink(h.ctx, writer, request, hash, h.storage, h.logger)
+	handlers.GetLink(h.ctx, writer, request, h.config, h.storage, h.logger)
 }
 
 func (h *handler) shortenLink(writer http.ResponseWriter, request *http.Request) {

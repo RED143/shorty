@@ -20,14 +20,9 @@ type ShortenBatchResponseItem struct {
 
 type ShortenBatchResponse []ShortenBatchResponseItem
 
-type UserURL struct {
+type UserURLs struct {
 	ShortURL    string `json:"short_url"`
 	OriginalURL string `json:"original_url"`
 }
 
-type UserURLResponse []UserURL
-
-type StorageURLsTODO struct {
-	Hash string
-	URL  string
-}
+type UserURLResponse []UserURLs
