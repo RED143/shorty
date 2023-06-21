@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"shorty/internal/app/hash"
 	"shorty/internal/app/models"
 	"strconv"
 	"strings"
@@ -33,28 +32,28 @@ func CreateDBStorage(ctx context.Context, databaseDSN string) (*dbstorage, error
 	return s, nil
 }
 
-func (s *dbstorage) Get(ctx context.Context, key string) (string, error) {
+func (s *dbstorage) Get(ctx context.Context, shortURL string) (string, error) {
 	conn, err := s.db.Conn(ctx)
 	if err != nil {
 		return "", fmt.Errorf("failed to open connection to db: %v", err)
 	}
 	defer conn.Close()
-	row := conn.QueryRowContext(ctx, "SELECT url FROM links WHERE hash = $1", key)
-	var url string
-	if err := row.Scan(&url); err != nil {
+	row := conn.QueryRowContext(ctx, "SELECT original_url FROM links WHERE short_url = $1", shortURL)
+	var originalURL string
+	if err := row.Scan(&originalURL); err != nil {
 		return "", fmt.Errorf("failed to scan row: %v", err)
 	}
-	return url, nil
+	return originalURL, nil
 }
 
-func (s *dbstorage) Put(ctx context.Context, key, value, userID string) error {
+func (s *dbstorage) Put(ctx context.Context, shortURL, originalURL, userID string) error {
 	conn, err := s.db.Conn(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to open connection to db: %w", err)
 	}
 	defer conn.Close()
 
-	result, err := conn.ExecContext(ctx, "INSERT INTO links (hash, url, user_id) VALUES ($1, $2, $3) ON CONFLICT (url) DO NOTHING", key, value, userID)
+	result, err := conn.ExecContext(ctx, "INSERT INTO links (short_url, original_url, user_id) VALUES ($1, $2, $3) ON CONFLICT (original_url) DO NOTHING", shortURL, originalURL, userID)
 	if err != nil {
 		conn.Close()
 		return fmt.Errorf("failed to insert row: %v", err)
@@ -84,7 +83,7 @@ func (s *dbstorage) Ping(ctx context.Context) error {
 	return nil
 }
 
-func (s *dbstorage) Batch(ctx context.Context, urls models.ShortenBatchRequest, userID string) error {
+func (s *dbstorage) Batch(ctx context.Context, urls []models.UserURLs, userID string) error {
 	tx, err := s.db.Begin()
 	if err != nil {
 		return fmt.Errorf("failed to begin transaction: %v", err)
@@ -96,7 +95,7 @@ func (s *dbstorage) Batch(ctx context.Context, urls models.ShortenBatchRequest, 
 		values[index] = "( $" + strconv.Itoa(2*index+1) + ", $" + strconv.Itoa(2*index+2) + ", $" + strconv.Itoa(2*len(urls)+1) + ")"
 	}
 
-	query := "INSERT INTO links (hash, url, user_id) VALUES " + strings.Join(values, ", ")
+	query := "INSERT INTO links (short_url, original_url, user_id) VALUES " + strings.Join(values, ", ")
 
 	_, err = tx.ExecContext(ctx, query, generateQueryKeys(urls, userID)...)
 	if err != nil {
@@ -107,7 +106,7 @@ func (s *dbstorage) Batch(ctx context.Context, urls models.ShortenBatchRequest, 
 	return tx.Commit()
 }
 
-func (s *dbstorage) UserURLs(ctx context.Context, userID string) ([]models.StorageURLsTODO, error) {
+func (s *dbstorage) UserURLs(ctx context.Context, userID string) ([]models.UserURLs, error) {
 	conn, err := s.db.Conn(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open connection to db: %w", err)
@@ -120,11 +119,11 @@ func (s *dbstorage) UserURLs(ctx context.Context, userID string) ([]models.Stora
 	}
 	defer rows.Close()
 
-	var urls []models.StorageURLsTODO
+	var urls []models.UserURLs
 	for rows.Next() {
-		var row models.StorageURLsTODO
+		var row models.UserURLs
 
-		err = rows.Scan(&row.Hash, &row.URL)
+		err = rows.Scan(&row.ShortURL, &row.OriginalURL)
 		if err != nil {
 			return nil, fmt.Errorf("failed to scan urls %v", err)
 		}
@@ -155,22 +154,22 @@ func setUpDatabase(ctx context.Context, db *sql.DB) error {
 	}
 	defer conn.Close()
 
-	_, err = conn.ExecContext(ctx, `CREATE TABLE IF NOT EXISTS links (id SERIAL PRIMARY KEY, hash VARCHAR(8), url VARCHAR(1024), user_id VARCHAR(36))`)
+	_, err = conn.ExecContext(ctx, `CREATE TABLE IF NOT EXISTS links (id SERIAL PRIMARY KEY, short_url VARCHAR(128), original_url VARCHAR(1024), user_id VARCHAR(36))`)
 	if err != nil {
 		return fmt.Errorf("failed to create table: %w", err)
 	}
 
-	_, err = conn.ExecContext(ctx, `CREATE UNIQUE INDEX IF NOT EXISTS id_url ON links (url)`)
+	_, err = conn.ExecContext(ctx, `CREATE UNIQUE INDEX IF NOT EXISTS id_url ON links (original_url)`)
 	if err != nil {
 		return fmt.Errorf("failed to set index: %v", err)
 	}
 	return nil
 }
 
-func generateQueryKeys(urls models.ShortenBatchRequest, userID string) []any {
+func generateQueryKeys(urls []models.UserURLs, userID string) []any {
 	keys := []any{}
 	for _, row := range urls {
-		keys = append(keys, hash.Generate([]byte(row.OriginalURL)), row.OriginalURL)
+		keys = append(keys, row.ShortURL, row.OriginalURL)
 	}
 	keys = append(keys, userID)
 	return keys

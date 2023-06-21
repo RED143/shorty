@@ -2,7 +2,6 @@ package mapstorage
 
 import (
 	"context"
-	"shorty/internal/app/hash"
 	"shorty/internal/app/models"
 	"sync"
 )
@@ -30,16 +29,16 @@ func (s *mapStorage) Ping(ctx context.Context) error {
 	return nil
 }
 
-func (s *mapStorage) Batch(ctx context.Context, urls models.ShortenBatchRequest, userID string) error {
+func (s *mapStorage) Batch(ctx context.Context, urls []models.UserURLs, userID string) error {
 	for _, url := range urls {
-		if err := s.Put(ctx, hash.Generate([]byte(url.OriginalURL)), url.OriginalURL, userID); err != nil {
+		if err := s.Put(ctx, url.ShortURL, url.OriginalURL, userID); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func (s *mapStorage) UserURLs(ctx context.Context, userID string) ([]models.StorageURLsTODO, error) {
+func (s *mapStorage) UserURLs(ctx context.Context, userID string) ([]models.UserURLs, error) {
 	return nil, nil
 }
 

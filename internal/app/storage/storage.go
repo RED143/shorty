@@ -13,8 +13,8 @@ type Storage interface {
 	Put(ctx context.Context, key, value, userID string) error
 	Get(ctx context.Context, key string) (string, error)
 	Ping(ctx context.Context) error
-	Batch(ctx context.Context, urls models.ShortenBatchRequest, userID string) error
-	UserURLs(ctx context.Context, userID string) ([]models.StorageURLsTODO, error)
+	Batch(ctx context.Context, urls []models.UserURLs, userID string) error
+	UserURLs(ctx context.Context, userID string) ([]models.UserURLs, error)
 	Close() error
 }
 

@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"shorty/internal/app/hash"
 	"shorty/internal/app/models"
 	"strconv"
 	"sync"
@@ -63,16 +62,16 @@ func (s *fileStorage) Ping(ctx context.Context) error {
 	return nil
 }
 
-func (s *fileStorage) Batch(ctx context.Context, urls models.ShortenBatchRequest, userID string) error {
+func (s *fileStorage) Batch(ctx context.Context, urls []models.UserURLs, userID string) error {
 	for _, url := range urls {
-		if err := s.Put(ctx, hash.Generate([]byte(url.OriginalURL)), url.OriginalURL, userID); err != nil {
+		if err := s.Put(ctx, url.ShortURL, url.OriginalURL, userID); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func (s *fileStorage) UserURLs(ctx context.Context, userID string) ([]models.StorageURLsTODO, error) {
+func (s *fileStorage) UserURLs(ctx context.Context, userID string) ([]models.UserURLs, error) {
 	return nil, nil
 }
 
