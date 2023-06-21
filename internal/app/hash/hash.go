@@ -3,11 +3,18 @@ package hash
 import (
 	"crypto/md5"
 	"encoding/hex"
+	"fmt"
+	"net/url"
 )
 
-func Generate(data []byte) string {
-	hash := md5.Sum(data)
+func GenerateShortURL(originalURL string, baseURL string) (string, error) {
+	hash := md5.Sum([]byte(originalURL))
 	hashString := hex.EncodeToString(hash[:])
 
-	return hashString[:7]
+	shortURL, err := url.JoinPath(baseURL, hashString[:7])
+	if err != nil {
+		return "", fmt.Errorf("failed to generate shortURL: %v", err)
+	}
+
+	return shortURL, nil
 }
