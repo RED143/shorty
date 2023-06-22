@@ -31,13 +31,17 @@ func GetLink(ctx context.Context, writer http.ResponseWriter, request *http.Requ
 		return
 	}
 
-	if link == "" {
+	if link.OriginalURL == "" {
 		http.Error(writer, "Link not found", http.StatusBadRequest)
 		return
 	}
 
-	writer.Header().Set("location", link)
-	writer.WriteHeader(http.StatusTemporaryRedirect)
+	if link.IsDeleted {
+		writer.WriteHeader(http.StatusGone)
+	} else {
+		writer.WriteHeader(http.StatusTemporaryRedirect)
+		writer.Header().Set("location", link.OriginalURL)
+	}
 }
 
 func ShortenLink(ctx context.Context, writer http.ResponseWriter, request *http.Request, cfg config.Config, str storage.Storage, logger *zap.SugaredLogger) {
