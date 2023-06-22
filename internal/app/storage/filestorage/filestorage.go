@@ -78,6 +78,10 @@ func (s *fileStorage) UserURLs(ctx context.Context, userID string) ([]models.Use
 	return nil, nil
 }
 
+func (s *fileStorage) DeleteUserURls(ctx context.Context, urls []string, userID string) error {
+	return nil
+}
+
 func (s *fileStorage) Close() error {
 	return nil
 }

@@ -103,7 +103,7 @@ func (s *dbstorage) Batch(ctx context.Context, urls []models.UserURLs, userID st
 
 	query := "INSERT INTO links (short_url, original_url, user_id) VALUES " + strings.Join(values, ", ")
 
-	_, err = tx.ExecContext(ctx, query, generateQueryKeys(urls, userID)...)
+	_, err = tx.ExecContext(ctx, query, generateQueryValues(urls, userID)...)
 	if err != nil {
 		tx.Rollback()
 		return fmt.Errorf("failed to insert line in table with %v", err)
@@ -145,6 +145,32 @@ func (s *dbstorage) UserURLs(ctx context.Context, userID string) ([]models.UserU
 	return urls, nil
 }
 
+func (s *dbstorage) DeleteUserURls(ctx context.Context, urls []string, userID string) error {
+	conn, err := s.db.Conn(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to open connection to db: %w", err)
+	}
+	defer conn.Close()
+
+	var condition string
+	var sep = ""
+
+	for index := range urls {
+		if index > 0 {
+			sep = " OR"
+		}
+		condition += sep + " (user_id = $1 AND short_url = $" + strconv.Itoa(index+2) + ")"
+	}
+
+	query := "UPDATE links SET is_deleted = true WHERE" + condition
+	_, err = conn.ExecContext(ctx, query, generateQueryValuesForDeleting(urls, userID)...)
+	if err != nil {
+		return fmt.Errorf("failed to update is_deleted column: %w", err)
+	}
+
+	return nil
+}
+
 func (s *dbstorage) Close() error {
 	err := s.db.Close()
 	if err != nil {
@@ -172,11 +198,19 @@ func setUpDatabase(ctx context.Context, db *sql.DB) error {
 	return nil
 }
 
-func generateQueryKeys(urls []models.UserURLs, userID string) []any {
+func generateQueryValues(urls []models.UserURLs, userID string) []any {
 	keys := []any{}
 	for _, row := range urls {
 		keys = append(keys, row.ShortURL, row.OriginalURL)
 	}
 	keys = append(keys, userID)
+	return keys
+}
+
+func generateQueryValuesForDeleting(urls []string, userID string) []any {
+	keys := []any{userID}
+	for _, url := range urls {
+		keys = append(keys, url)
+	}
 	return keys
 }
