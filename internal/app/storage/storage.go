@@ -15,6 +15,7 @@ type Storage interface {
 	Ping(ctx context.Context) error
 	Batch(ctx context.Context, urls []models.UserURLs, userID string) error
 	UserURLs(ctx context.Context, userID string) ([]models.UserURLs, error)
+	DeleteUserURls(ctx context.Context, urls []string, userID string) error
 	Close() error
 }
 

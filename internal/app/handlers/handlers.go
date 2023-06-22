@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"go.uber.org/zap"
 	"io"
 	"net/http"
@@ -39,8 +38,8 @@ func GetLink(ctx context.Context, writer http.ResponseWriter, request *http.Requ
 	if link.IsDeleted {
 		writer.WriteHeader(http.StatusGone)
 	} else {
-		writer.WriteHeader(http.StatusTemporaryRedirect)
 		writer.Header().Set("location", link.OriginalURL)
+		writer.WriteHeader(http.StatusTemporaryRedirect)
 	}
 }
 
@@ -199,7 +198,7 @@ func GetUserURLs(ctx context.Context, writer http.ResponseWriter, request *http.
 	}
 }
 
-func DeleteUserURLs(ctx context.Context, writer http.ResponseWriter, request *http.Request, str storage.Storage, logger *zap.SugaredLogger) {
+func DeleteUserURLs(ctx context.Context, writer http.ResponseWriter, request *http.Request, cfg config.Config, str storage.Storage, logger *zap.SugaredLogger) {
 	requestContext := request.Context()
 	userID := requestContext.Value(authorization.ContextKey("userID"))
 	var req models.DeleteUrlsRequest
@@ -211,5 +210,25 @@ func DeleteUserURLs(ctx context.Context, writer http.ResponseWriter, request *ht
 		return
 	}
 
-	fmt.Println("init delete user request", userID, req)
+	var shortURLs []string
+
+	for _, h := range req {
+		shortURL, err := url.JoinPath(cfg.BaseAddress, h)
+		if err != nil {
+			http.Error(writer, "Internal server error", http.StatusInternalServerError)
+			logger.Errorw("failed to get shortURL", "err", err)
+			return
+		}
+
+		shortURLs = append(shortURLs, shortURL)
+	}
+
+	err := str.DeleteUserURls(ctx, shortURLs, userID.(string))
+	if err != nil {
+		http.Error(writer, "Internal server error", http.StatusInternalServerError)
+		logger.Errorw("failed to delete URLs", "err", err)
+		return
+	}
+
+	writer.WriteHeader(http.StatusAccepted)
 }

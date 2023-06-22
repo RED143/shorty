@@ -45,6 +45,10 @@ func (s *mapStorage) UserURLs(ctx context.Context, userID string) ([]models.User
 	return nil, nil
 }
 
+func (s *mapStorage) DeleteUserURls(ctx context.Context, urls []string, userID string) error {
+	return nil
+}
+
 func (s *mapStorage) Close() error {
 	return nil
 }

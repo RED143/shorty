@@ -43,7 +43,7 @@ func (h *handler) getUserURLs(writer http.ResponseWriter, request *http.Request)
 }
 
 func (h *handler) deleteUserURLs(writer http.ResponseWriter, request *http.Request) {
-	handlers.DeleteUserURLs(h.ctx, writer, request, h.storage, h.logger)
+	handlers.DeleteUserURLs(h.ctx, writer, request, h.config, h.storage, h.logger)
 }
 
 type middleware struct {
