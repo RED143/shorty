@@ -42,6 +42,10 @@ func (h *handler) getUserURLs(writer http.ResponseWriter, request *http.Request)
 	handlers.GetUserURLs(h.ctx, writer, request, h.storage, h.logger)
 }
 
+func (h *handler) deleteUserURLs(writer http.ResponseWriter, request *http.Request) {
+	handlers.DeleteUserURLs(h.ctx, writer, request, h.storage, h.logger)
+}
+
 type middleware struct {
 	logger *zap.SugaredLogger
 }
@@ -82,6 +86,7 @@ func Start() error {
 	router.Post("/api/shorten", h.shortenLink)
 	router.Post("/api/shorten/batch", h.shortenLinkBatch)
 	router.Get("/api/user/urls", h.getUserURLs)
+	router.Delete("/api/user/urls", h.deleteUserURLs)
 	router.Get("/ping", h.checkDatabaseConnection)
 	router.Get("/{hash}", h.getLink)
 

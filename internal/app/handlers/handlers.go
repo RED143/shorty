@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"go.uber.org/zap"
 	"io"
 	"net/http"
@@ -192,4 +193,19 @@ func GetUserURLs(ctx context.Context, writer http.ResponseWriter, request *http.
 			return
 		}
 	}
+}
+
+func DeleteUserURLs(ctx context.Context, writer http.ResponseWriter, request *http.Request, str storage.Storage, logger *zap.SugaredLogger) {
+	requestContext := request.Context()
+	userID := requestContext.Value(authorization.ContextKey("userID"))
+	var req models.DeleteUrlsRequest
+
+	dec := json.NewDecoder(request.Body)
+	if err := dec.Decode(&req); err != nil {
+		http.Error(writer, "Internal server error", http.StatusInternalServerError)
+		logger.Errorw("cannot decode request JSON body", "err", err)
+		return
+	}
+
+	fmt.Println("init delete user request", userID, req)
 }

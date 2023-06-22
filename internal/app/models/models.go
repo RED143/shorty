@@ -26,3 +26,5 @@ type UserURLs struct {
 }
 
 type UserURLResponse []UserURLs
+
+type DeleteUrlsRequest []string
