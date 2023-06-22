@@ -11,11 +11,14 @@ type mapStorage struct {
 	links map[string]string
 }
 
-func (s *mapStorage) Get(ctx context.Context, key string) (string, error) {
+func (s *mapStorage) Get(ctx context.Context, key string) (models.UserURLs, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	val := s.links[key]
-	return val, nil
+	return models.UserURLs{
+		OriginalURL: val,
+		ShortURL:    key,
+	}, nil
 }
 
 func (s *mapStorage) Put(ctx context.Context, key, value, userID string) error {

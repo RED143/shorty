@@ -17,6 +17,11 @@ type dbstorage struct {
 	db *sql.DB
 }
 
+type GetURL struct {
+	originalURL string
+	isDeleted   bool
+}
+
 func CreateDBStorage(ctx context.Context, databaseDSN string) (*dbstorage, error) {
 	db, err := sql.Open("pgx", databaseDSN)
 	if err != nil {
@@ -32,18 +37,19 @@ func CreateDBStorage(ctx context.Context, databaseDSN string) (*dbstorage, error
 	return s, nil
 }
 
-func (s *dbstorage) Get(ctx context.Context, shortURL string) (string, error) {
+func (s *dbstorage) Get(ctx context.Context, shortURL string) (models.UserURLs, error) {
+	var urls models.UserURLs
 	conn, err := s.db.Conn(ctx)
 	if err != nil {
-		return "", fmt.Errorf("failed to open connection to db: %v", err)
+		return urls, fmt.Errorf("failed to open connection to db: %v", err)
 	}
 	defer conn.Close()
-	row := conn.QueryRowContext(ctx, "SELECT original_url FROM links WHERE short_url = $1", shortURL)
-	var originalURL string
-	if err := row.Scan(&originalURL); err != nil {
-		return "", fmt.Errorf("failed to scan row: %v", err)
+	row := conn.QueryRowContext(ctx, "SELECT short_url, original_url, is_deleted FROM links WHERE short_url = $1", shortURL)
+
+	if err := row.Scan(&urls.ShortURL, &urls.OriginalURL, &urls.IsDeleted); err != nil {
+		return urls, fmt.Errorf("failed to scan row: %v", err)
 	}
-	return originalURL, nil
+	return urls, nil
 }
 
 func (s *dbstorage) Put(ctx context.Context, shortURL, originalURL, userID string) error {
@@ -154,7 +160,7 @@ func setUpDatabase(ctx context.Context, db *sql.DB) error {
 	}
 	defer conn.Close()
 
-	_, err = conn.ExecContext(ctx, `CREATE TABLE IF NOT EXISTS links (id SERIAL PRIMARY KEY, short_url VARCHAR(128), original_url VARCHAR(1024), user_id VARCHAR(36))`)
+	_, err = conn.ExecContext(ctx, `CREATE TABLE IF NOT EXISTS links (id SERIAL PRIMARY KEY, short_url VARCHAR(128), original_url VARCHAR(1024), user_id VARCHAR(36), is_deleted BOOLEAN DEFAULT false)`)
 	if err != nil {
 		return fmt.Errorf("failed to create table: %w", err)
 	}
