@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"go.uber.org/zap"
 	"io"
 	"net/http"
@@ -223,12 +224,25 @@ func DeleteUserURLs(ctx context.Context, writer http.ResponseWriter, request *ht
 		shortURLs = append(shortURLs, shortURL)
 	}
 
-	err := str.DeleteUserURls(ctx, shortURLs, userID.(string))
-	if err != nil {
-		http.Error(writer, "Internal server error", http.StatusInternalServerError)
-		logger.Errorw("failed to delete URLs", "err", err)
-		return
-	}
-
 	writer.WriteHeader(http.StatusAccepted)
+	go func() {
+		err := deletingUserUrls(ctx, str, shortURLs, userID.(string))
+		if err != nil {
+			http.Error(writer, "Internal server error", http.StatusInternalServerError)
+			logger.Errorw("failed to delete URLs", "err", err)
+			return
+		}
+	}()
+}
+
+func deletingUserUrls(ctx context.Context, str storage.Storage, urls []string, userID string) error {
+	select {
+	case <-ctx.Done():
+		return fmt.Errorf("deleting was interrupted by context for userID=%s", userID)
+	default:
+		if err := str.DeleteUserURls(ctx, urls, userID); err != nil {
+			return fmt.Errorf("failed to delete user urls with userID=%s: %v", userID, err)
+		}
+		return nil
+	}
 }
