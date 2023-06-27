@@ -4,10 +4,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
+
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/google/uuid"
 	"go.uber.org/zap"
-	"net/http"
 )
 
 type Claims struct {
@@ -16,6 +17,8 @@ type Claims struct {
 }
 
 type ContextKey string
+
+const userIDContextKey = ContextKey("userID")
 
 const secret = "shouldBeSavedInEnvFile"
 
@@ -27,16 +30,16 @@ func WithAuthorization(h http.Handler, logger *zap.SugaredLogger) http.Handler {
 				id := uuid.NewString()
 				token, err := generateJWTToken(id)
 				if err != nil {
-					logger.Errorw("Failed to get token string", "err", err)
+					logger.Errorf("Failed to get token string: %v", err)
 					w.WriteHeader(http.StatusInternalServerError)
 					return
 				}
-				ctx := context.WithValue(r.Context(), ContextKey("userID"), id)
+				ctx := context.WithValue(r.Context(), userIDContextKey, id)
 				setAuthCookie(w, token)
 				h.ServeHTTP(w, r.WithContext(ctx))
 				return
 			} else {
-				logger.Errorw("Failed to get AuthToken", "err", err)
+				logger.Errorf("Failed to get AuthToken: %v", err)
 				w.WriteHeader(http.StatusInternalServerError)
 				return
 			}
@@ -49,7 +52,7 @@ func WithAuthorization(h http.Handler, logger *zap.SugaredLogger) http.Handler {
 			return
 		}
 
-		ctx := context.WithValue(r.Context(), ContextKey("userID"), userID)
+		ctx := context.WithValue(r.Context(), userIDContextKey, userID)
 		setAuthCookie(w, authToken.Value)
 		h.ServeHTTP(w, r.WithContext(ctx))
 	}
@@ -64,11 +67,10 @@ func generateJWTToken(id string) (string, error) {
 
 	tokenString, err := token.SignedString([]byte(secret))
 	if err != nil {
-		return "", fmt.Errorf("failed to generate token string: %v", err)
+		return "", fmt.Errorf("failed to generate token string: %w", err)
 	}
 
 	return tokenString, nil
-
 }
 
 func GetUserIDFromJWTToken(tokenString string) string {
