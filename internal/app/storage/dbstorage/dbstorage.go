@@ -152,18 +152,7 @@ func (s *dbstorage) DeleteUserURls(ctx context.Context, urls []string, userID st
 	}
 	defer conn.Close()
 
-	var condition string
-	var sep = ""
-
-	for index := range urls {
-		if index > 0 {
-			sep = " OR"
-		}
-		condition += sep + " (user_id = $1 AND short_url = $" + strconv.Itoa(index+2) + ")"
-	}
-
-	query := "UPDATE links SET is_deleted = true WHERE" + condition
-	_, err = conn.ExecContext(ctx, query, generateQueryValuesForDeleting(urls, userID)...)
+	_, err = conn.ExecContext(ctx, "UPDATE links SET is_deleted = true WHERE user_id = $1 AND short_url = any($2)", userID, urls)
 	if err != nil {
 		return fmt.Errorf("failed to update is_deleted column: %w", err)
 	}
@@ -204,13 +193,5 @@ func generateQueryValues(urls []models.UserURLs, userID string) []any {
 		keys = append(keys, row.ShortURL, row.OriginalURL)
 	}
 	keys = append(keys, userID)
-	return keys
-}
-
-func generateQueryValuesForDeleting(urls []string, userID string) []any {
-	keys := []any{userID}
-	for _, url := range urls {
-		keys = append(keys, url)
-	}
 	return keys
 }
