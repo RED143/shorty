@@ -48,6 +48,7 @@ func (h *handler) deleteUserURLs(writer http.ResponseWriter, request *http.Reque
 
 type middleware struct {
 	logger *zap.SugaredLogger
+	cfg    config.Config
 }
 
 func (m *middleware) withLogging(h http.Handler) http.Handler {
@@ -59,7 +60,7 @@ func (m *middleware) withCompressing(h http.Handler) http.Handler {
 }
 
 func (m *middleware) withAuthorization(h http.Handler) http.Handler {
-	return authorization.WithAuthorization(h, m.logger)
+	return authorization.WithAuthorization(h, m.cfg, m.logger)
 }
 
 func Start() error {
@@ -74,7 +75,7 @@ func Start() error {
 	}
 	defer s.Close()
 	h := handler{storage: s, config: c, logger: l, ctx: context.Background()}
-	m := middleware{logger: l}
+	m := middleware{logger: l, cfg: c}
 
 	router := chi.NewRouter()
 

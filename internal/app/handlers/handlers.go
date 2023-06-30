@@ -38,17 +38,19 @@ func GetLink(ctx context.Context, writer http.ResponseWriter, request *http.Requ
 
 	if link.IsDeleted {
 		writer.WriteHeader(http.StatusGone)
-	} else {
-		writer.Header().Set("location", link.OriginalURL)
-		writer.WriteHeader(http.StatusTemporaryRedirect)
+		return
 	}
+
+	writer.Header().Set("location", link.OriginalURL)
+	writer.WriteHeader(http.StatusTemporaryRedirect)
+
 }
 
 func ShortenLink(ctx context.Context, writer http.ResponseWriter, request *http.Request, cfg config.Config, str storage.Storage, logger *zap.SugaredLogger) {
 	var req models.ShortenRequest
 	isJSONRequest := request.RequestURI == "/api/shorten"
 	requestContext := request.Context()
-	userID := requestContext.Value(authorization.ContextKey("userID"))
+	userID := requestContext.Value(authorization.UserIDContextKey)
 
 	if isJSONRequest {
 		dec := json.NewDecoder(request.Body)
@@ -101,22 +103,23 @@ func ShortenLink(ctx context.Context, writer http.ResponseWriter, request *http.
 			logger.Errorw("error encoding response", "err", err)
 			return
 		}
-	} else {
-		writer.Header().Set("content-type", "plain/text")
-		writer.WriteHeader(statusCode)
-		_, err = writer.Write([]byte(shortURL))
-		if err != nil {
-			http.Error(writer, "Internal server error", http.StatusInternalServerError)
-			logger.Errorw("failed to write response", "err", err)
-			return
-		}
+		return
+	}
+
+	writer.Header().Set("content-type", "plain/text")
+	writer.WriteHeader(statusCode)
+	_, err = writer.Write([]byte(shortURL))
+	if err != nil {
+		http.Error(writer, "Internal server error", http.StatusInternalServerError)
+		logger.Errorw("failed to write response", "err", err)
+		return
 	}
 
 }
 
 func ShortenLinkBatch(ctx context.Context, writer http.ResponseWriter, request *http.Request, cfg config.Config, str storage.Storage, logger *zap.SugaredLogger) {
 	requestContext := request.Context()
-	userID := requestContext.Value(authorization.ContextKey("userID"))
+	userID := requestContext.Value(authorization.UserIDContextKey)
 
 	var urls models.ShortenBatchRequest
 	dec := json.NewDecoder(request.Body)
@@ -176,7 +179,7 @@ func CheckDatabaseConnection(ctx context.Context, writer http.ResponseWriter, st
 
 func GetUserURLs(ctx context.Context, writer http.ResponseWriter, request *http.Request, str storage.Storage, logger *zap.SugaredLogger) {
 	requestContext := request.Context()
-	userID := requestContext.Value(authorization.ContextKey("userID"))
+	userID := requestContext.Value(authorization.UserIDContextKey)
 
 	urls, err := str.UserURLs(ctx, userID.(string))
 	if err != nil {
@@ -188,20 +191,21 @@ func GetUserURLs(ctx context.Context, writer http.ResponseWriter, request *http.
 	writer.Header().Set("content-type", "application/json")
 	if len(urls) == 0 {
 		writer.WriteHeader(http.StatusNoContent)
-	} else {
-		writer.WriteHeader(http.StatusOK)
-		enc := json.NewEncoder(writer)
-		if err := enc.Encode(urls); err != nil {
-			http.Error(writer, "Internal server error", http.StatusInternalServerError)
-			logger.Errorw("error encoding response", "err", err)
-			return
-		}
+		return
+	}
+
+	writer.WriteHeader(http.StatusOK)
+	enc := json.NewEncoder(writer)
+	if err := enc.Encode(urls); err != nil {
+		http.Error(writer, "Internal server error", http.StatusInternalServerError)
+		logger.Errorw("error encoding response", "err", err)
+		return
 	}
 }
 
 func DeleteUserURLs(ctx context.Context, writer http.ResponseWriter, request *http.Request, cfg config.Config, str storage.Storage, logger *zap.SugaredLogger) {
 	requestContext := request.Context()
-	userID := requestContext.Value(authorization.ContextKey("userID"))
+	userID := requestContext.Value(authorization.UserIDContextKey)
 	var req models.DeleteUrlsRequest
 
 	dec := json.NewDecoder(request.Body)
