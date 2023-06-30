@@ -18,9 +18,9 @@ type Claims struct {
 	UserID string
 }
 
-type ContextKey string
+type contextKey int
 
-const UserIDContextKey = ContextKey("userID")
+const UserIDContextKey contextKey = iota
 
 func WithAuthorization(h http.Handler, cfg config.Config, logger *zap.SugaredLogger) http.Handler {
 	authorizationMiddleware := func(w http.ResponseWriter, r *http.Request) {

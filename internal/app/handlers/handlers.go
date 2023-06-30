@@ -245,7 +245,7 @@ func deletingUserUrls(ctx context.Context, str storage.Storage, urls []string, u
 		return fmt.Errorf("deleting was interrupted by context for userID=%s", userID)
 	default:
 		if err := str.DeleteUserURls(ctx, urls, userID); err != nil {
-			return fmt.Errorf("failed to delete user urls with userID=%s: %v", userID, err)
+			return fmt.Errorf("failed to delete user urls with userID=%s: %w", userID, err)
 		}
 		return nil
 	}

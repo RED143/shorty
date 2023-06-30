@@ -66,7 +66,7 @@ func TestShortenLink(t *testing.T) {
 		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			request := httptest.NewRequest(tc.method, "/", strings.NewReader(tc.body))
-			ctx := context.WithValue(request.Context(), authorization.ContextKey("userID"), "1")
+			ctx := context.WithValue(request.Context(), authorization.UserIDContextKey, "1")
 			request.Header.Set("Content-Type", tc.contentType)
 			writer := httptest.NewRecorder()
 
