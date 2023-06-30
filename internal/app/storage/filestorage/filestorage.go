@@ -6,33 +6,33 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+
 	"shorty/internal/app/models"
-	"strconv"
-	"sync"
+	"shorty/internal/app/storage/mapstorage"
+
+	"github.com/google/uuid"
 )
 
 type fileStorage struct {
-	mu         *sync.Mutex
+	mapStorage *mapstorage.MapStorage
 	filePath   string
-	linesCount int
-	links      map[string]string
 }
 
 type fileLine struct {
 	UUID        string `json:"uuid"`
 	ShortURL    string `json:"short_url"`
 	OriginalURL string `json:"original_url"`
+	UserID      string `json:"user_id"`
 }
 
-func (s *fileStorage) Put(ctx context.Context, key, value, userID string) error {
+func (s *fileStorage) Put(ctx context.Context, shortURL, originalURL, userID string) error {
 	file, err := os.OpenFile(s.filePath, os.O_WRONLY|os.O_APPEND, 0666)
 	if err != nil {
 		return fmt.Errorf("failed to open the file \"%s\": %v", s.filePath, err)
 	}
 	defer file.Close()
 
-	s.linesCount += 1
-	line := fileLine{UUID: strconv.Itoa(s.linesCount), ShortURL: key, OriginalURL: value}
+	line := fileLine{UUID: uuid.NewString(), ShortURL: shortURL, OriginalURL: originalURL, UserID: userID}
 	data, err := json.Marshal(&line)
 	if err != nil {
 		return fmt.Errorf("failed to encode json: %v", err)
@@ -44,21 +44,13 @@ func (s *fileStorage) Put(ctx context.Context, key, value, userID string) error 
 		return fmt.Errorf("failed to save data to file: %v", err)
 	}
 
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	s.links[key] = value
+	s.mapStorage.Put(ctx, shortURL, originalURL, userID)
 
 	return nil
 }
 
-func (s *fileStorage) Get(ctx context.Context, key string) (models.UserURLs, error) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	val := s.links[key]
-	return models.UserURLs{
-		OriginalURL: val,
-		ShortURL:    key,
-	}, nil
+func (s *fileStorage) Get(ctx context.Context, shortURL string) (models.UserURLs, error) {
+	return s.mapStorage.Get(ctx, shortURL)
 }
 
 func (s *fileStorage) Ping(ctx context.Context) error {
@@ -75,7 +67,7 @@ func (s *fileStorage) Batch(ctx context.Context, urls []models.UserURLs, userID 
 }
 
 func (s *fileStorage) UserURLs(ctx context.Context, userID string) ([]models.UserURLs, error) {
-	return nil, nil
+	return s.mapStorage.UserURLs(ctx, userID)
 }
 
 func (s *fileStorage) DeleteUserURls(ctx context.Context, urls []string, userID string) error {
@@ -86,25 +78,26 @@ func (s *fileStorage) Close() error {
 	return nil
 }
 
-func CreateFileStorage(filePath string) (*fileStorage, error) {
+func CreateFileStorage(filePath string, mapStorage *mapstorage.MapStorage) (*fileStorage, error) {
 	file, err := os.OpenFile(filePath, os.O_RDONLY|os.O_CREATE, 0666)
 	if err != nil {
-		return nil, fmt.Errorf("failed to open the file \"%s\": %v", filePath, err)
+		return nil, fmt.Errorf("failed to open the file \"%s\": %w", filePath, err)
 	}
 	defer file.Close()
 
-	storage := &fileStorage{filePath: filePath, linesCount: 0, mu: &sync.Mutex{},
-		links: map[string]string{}}
+	s := &fileStorage{filePath: filePath, mapStorage: mapStorage}
 
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
 		line := fileLine{}
 		if err := json.Unmarshal(scanner.Bytes(), &line); err != nil {
-			return nil, fmt.Errorf("failed to decode json: %v", err)
+			return nil, fmt.Errorf("failed to decode json: %w", err)
 		}
-		storage.links[line.ShortURL] = line.OriginalURL
-		storage.linesCount += 1
+		err := s.mapStorage.Put(context.Background(), line.ShortURL, line.OriginalURL, line.UserID)
+		if err != nil {
+			return nil, fmt.Errorf("failed to save line in map storafe: %w", err)
+		}
 	}
 
-	return storage, nil
+	return s, nil
 }

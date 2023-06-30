@@ -24,7 +24,11 @@ func NewStorage(config config.Config) (Storage, error) {
 		s, err := dbstorage.CreateDBStorage(context.Background(), config.DatabaseDSN)
 		return s, err
 	} else if config.FileStoragePath != "" {
-		s, err := filestorage.CreateFileStorage(config.FileStoragePath)
+		mapStorage, err := mapstorage.CreateMapStorage()
+		if err != nil {
+			return nil, err
+		}
+		s, err := filestorage.CreateFileStorage(config.FileStoragePath, mapStorage)
 		return s, err
 	} else {
 		s, err := mapstorage.CreateMapStorage()
