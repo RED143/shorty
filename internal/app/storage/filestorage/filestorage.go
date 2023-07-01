@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/google/uuid"
 	"os"
 	"shorty/internal/app/models"
 	"shorty/internal/app/storage/mapstorage"
@@ -17,7 +16,6 @@ type fileStorage struct {
 }
 
 type fileLine struct {
-	UUID        string `json:"uuid"`
 	ShortURL    string `json:"short_url"`
 	OriginalURL string `json:"original_url"`
 	UserID      string `json:"user_id"`
@@ -31,7 +29,7 @@ func (s *fileStorage) Put(ctx context.Context, shortURL, originalURL, userID str
 	}
 	defer file.Close()
 
-	line := fileLine{UUID: uuid.NewString(), ShortURL: shortURL, OriginalURL: originalURL, UserID: userID}
+	line := fileLine{ShortURL: shortURL, OriginalURL: originalURL, UserID: userID}
 	data, err := json.Marshal(&line)
 	if err != nil {
 		return fmt.Errorf("failed to encode json: %w", err)
@@ -70,7 +68,12 @@ func (s *fileStorage) UserURLs(ctx context.Context, userID string) ([]models.Use
 }
 
 func (s *fileStorage) DeleteUserURls(ctx context.Context, shortURLs []string, userID string) error {
-	return s.mapStorage.DeleteUserURls(ctx, shortURLs, userID)
+	err := s.mapStorage.DeleteUserURls(ctx, shortURLs, userID)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (s *fileStorage) Close() error {
