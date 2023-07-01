@@ -73,6 +73,26 @@ func (s *fileStorage) DeleteUserURls(ctx context.Context, shortURLs []string, us
 		return err
 	}
 
+	file, err := os.OpenFile(s.filePath, os.O_WRONLY|os.O_CREATE, 0666)
+	if err != nil {
+		return fmt.Errorf("failed to open the file \"%s\": %w", s.filePath, err)
+	}
+	defer file.Close()
+
+	for shortURL, item := range s.mapStorage.Links {
+		line := fileLine{ShortURL: shortURL, OriginalURL: item.OriginalURL, UserID: item.UserID, IsDeleted: item.IsDeleted}
+		data, err := json.Marshal(&line)
+		if err != nil {
+			return fmt.Errorf("failed to encode json: %w", err)
+		}
+		data = append(data, '\n')
+
+		_, err = file.Write(data)
+		if err != nil {
+			return fmt.Errorf("failed to save data to file: %w", err)
+		}
+	}
+
 	return nil
 }
 
