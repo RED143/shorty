@@ -21,7 +21,7 @@ type Storage interface {
 
 func NewStorage(config config.Config) (Storage, error) {
 	if config.DatabaseDSN != "" {
-		s, err := dbstorage.CreateDBStorage(context.Background(), config.DatabaseDSN)
+		s, err := dbstorage.CreateDBStorage(context.Background(), config)
 		return s, err
 	} else if config.FileStoragePath != "" {
 		mapStorage, err := mapstorage.CreateMapStorage()
