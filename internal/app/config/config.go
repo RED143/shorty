@@ -6,15 +6,17 @@ import (
 )
 
 type Config struct {
-	ServerAddress   string
-	BaseAddress     string
-	FileStoragePath string
-	DatabaseDSN     string
-	JWTSecret       string
+	ServerAddress        string
+	BaseAddress          string
+	FileStoragePath      string
+	DatabaseDSN          string
+	JWTSecret            string
+	MaxDBConnections     int
+	MaxIdleDBConnections int
 }
 
 func GetConfig() Config {
-	var cfg = Config{}
+	var cfg = Config{MaxDBConnections: 100, MaxIdleDBConnections: 100}
 
 	flag.StringVar(&cfg.ServerAddress, "a", "localhost:8080", "server address")
 	flag.StringVar(&cfg.BaseAddress, "b", "http://localhost:8080", "base address")

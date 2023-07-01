@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"shorty/internal/app/config"
 	"shorty/internal/app/models"
 	"strconv"
 	"strings"
@@ -22,10 +23,12 @@ type GetURL struct {
 	isDeleted   bool
 }
 
-func CreateDBStorage(ctx context.Context, databaseDSN string) (*dbstorage, error) {
-	db, err := sql.Open("pgx", databaseDSN)
+func CreateDBStorage(ctx context.Context, cfg config.Config) (*dbstorage, error) {
+	db, err := sql.Open("pgx", cfg.DatabaseDSN)
+	db.SetMaxOpenConns(cfg.MaxDBConnections)
+	db.SetMaxIdleConns(cfg.MaxDBConnections)
 	if err != nil {
-		return nil, fmt.Errorf("failed to open connection to database with %s, %v", databaseDSN, err)
+		return nil, fmt.Errorf("failed to open connection to database with %s, %v", cfg.DatabaseDSN, err)
 	}
 
 	if err := setUpDatabase(ctx, db); err != nil {
