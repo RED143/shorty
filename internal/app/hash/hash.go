@@ -13,7 +13,7 @@ func GenerateShortURL(originalURL string, baseURL string) (string, error) {
 
 	shortURL, err := url.JoinPath(baseURL, hashString[:7])
 	if err != nil {
-		return "", fmt.Errorf("failed to generate shortURL: %v", err)
+		return "", fmt.Errorf("failed to generate shortURL: %w", err)
 	}
 
 	return shortURL, nil

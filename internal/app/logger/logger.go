@@ -1,6 +1,8 @@
 package logger
 
 import (
+	"fmt"
+	"log"
 	"net/http"
 	"time"
 
@@ -21,8 +23,11 @@ type (
 
 func (r *loggingResponseWriter) Write(b []byte) (int, error) {
 	size, err := r.ResponseWriter.Write(b)
+	if err != nil {
+		return size, fmt.Errorf("failed to write logging response: %w", err)
+	}
 	r.responseData.size += size
-	return size, err
+	return size, nil
 }
 
 func (r *loggingResponseWriter) WriteHeader(statusCode int) {
@@ -32,11 +37,15 @@ func (r *loggingResponseWriter) WriteHeader(statusCode int) {
 
 func Initialize() (*zap.SugaredLogger, error) {
 	logger, err := zap.NewDevelopment()
-
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to init logger: %w", err)
 	}
-	defer logger.Sync()
+	defer func() {
+		if err := logger.Sync(); err != nil {
+			log.Printf("failed to sync logger: %v", err)
+		}
+	}()
+
 	return logger.Sugar(), nil
 }
 

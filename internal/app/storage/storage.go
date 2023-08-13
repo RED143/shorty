@@ -2,6 +2,7 @@ package storage
 
 import (
 	"context"
+	"fmt"
 	"shorty/internal/app/config"
 	"shorty/internal/app/models"
 	"shorty/internal/app/storage/dbstorage"
@@ -22,16 +23,25 @@ type Storage interface {
 func NewStorage(config config.Config) (Storage, error) {
 	if config.DatabaseDSN != "" {
 		s, err := dbstorage.CreateDBStorage(context.Background(), config)
-		return s, err
-	} else if config.FileStoragePath != "" {
+		return s, fmt.Errorf("failed to init db storage: %w", err)
+	}
+
+	if config.FileStoragePath != "" {
 		mapStorage, err := mapstorage.CreateMapStorage()
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed to init second map storage: %w", err)
 		}
 		s, err := filestorage.CreateFileStorage(config.FileStoragePath, mapStorage)
-		return s, err
-	} else {
-		s, err := mapstorage.CreateMapStorage()
-		return s, err
+		if err != nil {
+			return nil, fmt.Errorf("failed to init file storage: %w", err)
+		}
+		return s, nil
 	}
+
+	s, err := mapstorage.CreateMapStorage()
+	if err != nil {
+		return nil, fmt.Errorf("failed to init map storage: %w", err)
+	}
+
+	return s, nil
 }

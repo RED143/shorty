@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"go.uber.org/zap"
 	"io"
 	"net/http"
 	"net/url"
@@ -15,19 +14,32 @@ import (
 	"shorty/internal/app/models"
 	"shorty/internal/app/storage"
 	"shorty/internal/app/storage/dbstorage"
+
+	"go.uber.org/zap"
 )
 
-func GetLink(ctx context.Context, writer http.ResponseWriter, request *http.Request, cfg config.Config, str storage.Storage, logger *zap.SugaredLogger) {
+const internalServerError = "Internal server error"
+const contentTypeKey = "content-type"
+const applicationJSONType = "application/json"
+
+func GetLink(
+	ctx context.Context,
+	writer http.ResponseWriter,
+	request *http.Request,
+	cfg config.Config,
+	str storage.Storage,
+	logger *zap.SugaredLogger,
+) {
 	shortURL, err := url.JoinPath(cfg.BaseAddress, request.URL.Path)
 	if err != nil {
-		http.Error(writer, "Internal server error", http.StatusInternalServerError)
-		logger.Errorw("failed to get shortURL", "err", err)
+		http.Error(writer, internalServerError, http.StatusInternalServerError)
+		logger.Errorf("failed to get shortURL: %v", err)
 		return
 	}
 	link, err := str.Get(ctx, shortURL)
 	if err != nil {
-		http.Error(writer, "Internal server error", http.StatusInternalServerError)
-		logger.Errorw("failed to write response", "err", err)
+		http.Error(writer, internalServerError, http.StatusInternalServerError)
+		logger.Errorf("failed to write response: %v", err)
 		return
 	}
 
@@ -43,10 +55,15 @@ func GetLink(ctx context.Context, writer http.ResponseWriter, request *http.Requ
 
 	writer.Header().Set("location", link.OriginalURL)
 	writer.WriteHeader(http.StatusTemporaryRedirect)
-
 }
 
-func ShortenLink(ctx context.Context, writer http.ResponseWriter, request *http.Request, cfg config.Config, str storage.Storage, logger *zap.SugaredLogger) {
+func ShortenLink(
+	ctx context.Context,
+	writer http.ResponseWriter,
+	request *http.Request, cfg config.Config,
+	str storage.Storage,
+	logger *zap.SugaredLogger,
+) {
 	var req models.ShortenRequest
 	isJSONRequest := request.RequestURI == "/api/shorten"
 	requestContext := request.Context()
@@ -55,15 +72,15 @@ func ShortenLink(ctx context.Context, writer http.ResponseWriter, request *http.
 	if isJSONRequest {
 		dec := json.NewDecoder(request.Body)
 		if err := dec.Decode(&req); err != nil {
-			http.Error(writer, "Internal server error", http.StatusInternalServerError)
-			logger.Errorw("cannot decode request JSON body", "err", err)
+			http.Error(writer, internalServerError, http.StatusInternalServerError)
+			logger.Errorf("cannot decode request JSON body: %v", err)
 			return
 		}
 	} else {
 		body, err := io.ReadAll(request.Body)
 		if err != nil {
-			http.Error(writer, "Internal server error", http.StatusInternalServerError)
-			logger.Errorw("failed to parse request body", "err", err)
+			http.Error(writer, internalServerError, http.StatusInternalServerError)
+			logger.Errorf("failed to parse request body: %v", err)
 			return
 		}
 		req.URL = string(body)
@@ -76,15 +93,15 @@ func ShortenLink(ctx context.Context, writer http.ResponseWriter, request *http.
 
 	shortURL, err := hash.GenerateShortURL(req.URL, cfg.BaseAddress)
 	if err != nil {
-		http.Error(writer, "Internal server error", http.StatusInternalServerError)
-		logger.Errorw("failed to generate shortURL", "err", err)
+		http.Error(writer, internalServerError, http.StatusInternalServerError)
+		logger.Errorf("failed to generate shortURL: %v", err)
 		return
 	}
 	err = str.Put(ctx, shortURL, req.URL, userID.(string))
 	alreadySaved := errors.Is(err, dbstorage.ErrConflict)
 	if err != nil && !alreadySaved {
-		http.Error(writer, "Internal server error", http.StatusInternalServerError)
-		logger.Errorw("failed to save url", "err", err)
+		http.Error(writer, internalServerError, http.StatusInternalServerError)
+		logger.Errorf("failed to save url: %v", err)
 		return
 	}
 
@@ -95,55 +112,61 @@ func ShortenLink(ctx context.Context, writer http.ResponseWriter, request *http.
 
 	if isJSONRequest {
 		resp := models.ShortenResponse{Result: shortURL}
-		writer.Header().Set("content-type", "application/json")
+		writer.Header().Set(contentTypeKey, applicationJSONType)
 		writer.WriteHeader(statusCode)
 		enc := json.NewEncoder(writer)
 		if err := enc.Encode(resp); err != nil {
-			http.Error(writer, "Internal server error", http.StatusInternalServerError)
-			logger.Errorw("error encoding response", "err", err)
+			http.Error(writer, internalServerError, http.StatusInternalServerError)
+			logger.Errorf("error encoding response: %v", err)
 			return
 		}
 		return
 	}
 
-	writer.Header().Set("content-type", "plain/text")
+	writer.Header().Set(contentTypeKey, "plain/text")
 	writer.WriteHeader(statusCode)
 	_, err = writer.Write([]byte(shortURL))
 	if err != nil {
-		http.Error(writer, "Internal server error", http.StatusInternalServerError)
-		logger.Errorw("failed to write response", "err", err)
+		http.Error(writer, internalServerError, http.StatusInternalServerError)
+		logger.Errorf("failed to write response for shorten link: %v", err)
 		return
 	}
-
 }
 
-func ShortenLinkBatch(ctx context.Context, writer http.ResponseWriter, request *http.Request, cfg config.Config, str storage.Storage, logger *zap.SugaredLogger) {
+func ShortenLinkBatch(
+	ctx context.Context,
+	writer http.ResponseWriter,
+	request *http.Request,
+	cfg config.Config,
+	str storage.Storage,
+	logger *zap.SugaredLogger,
+) {
 	requestContext := request.Context()
 	userID := requestContext.Value(authorization.UserIDContextKey)
 
 	var urls models.ShortenBatchRequest
 	dec := json.NewDecoder(request.Body)
 	if err := dec.Decode(&urls); err != nil {
-		http.Error(writer, "Internal server error", http.StatusInternalServerError)
-		logger.Errorw("cannot decode request JSON body", "err", err)
+		http.Error(writer, internalServerError, http.StatusInternalServerError)
+		logger.Errorf("cannot decode request JSON body for batch request: %v", err)
 		return
 	}
 
-	var userURLs []models.UserURLs
-	for _, u := range urls {
+	userURLs := make([]models.UserURLs, len(urls))
+	for i, u := range urls {
 		shortURL, err := hash.GenerateShortURL(u.OriginalURL, cfg.BaseAddress)
 		if err != nil {
-			http.Error(writer, "Internal server error", http.StatusInternalServerError)
-			logger.Errorw("failed to generate shortURL", "err", err)
+			http.Error(writer, internalServerError, http.StatusInternalServerError)
+			logger.Errorf("failed to generate shortURL for batch request: %v", err)
 			return
 		}
-		userURLs = append(userURLs, models.UserURLs{OriginalURL: u.OriginalURL, ShortURL: shortURL})
+		userURLs[i] = models.UserURLs{OriginalURL: u.OriginalURL, ShortURL: shortURL}
 	}
 
 	err := str.Batch(ctx, userURLs, userID.(string))
 	if err != nil {
-		http.Error(writer, "Internal server error", http.StatusInternalServerError)
-		logger.Errorw("Failed to batch saving", "err", err)
+		http.Error(writer, internalServerError, http.StatusInternalServerError)
+		logger.Errorf("Failed to batch saving: %v", err)
 		return
 	}
 
@@ -151,44 +174,55 @@ func ShortenLinkBatch(ctx context.Context, writer http.ResponseWriter, request *
 	for _, u := range urls {
 		shortURL, err := hash.GenerateShortURL(u.OriginalURL, cfg.BaseAddress)
 		if err != nil {
-			http.Error(writer, "Internal server error", http.StatusInternalServerError)
-			logger.Errorw("failed to generate shortURL", "err", err)
+			http.Error(writer, internalServerError, http.StatusInternalServerError)
+			logger.Errorf("failed to generate shortURL for batch response: %v", err)
 			return
 		}
 		response = append(response, models.ShortenBatchResponseItem{CorrelationID: u.CorrelationID, ShortURL: shortURL})
 	}
 
-	writer.Header().Set("content-type", "application/json")
+	writer.Header().Set(contentTypeKey, applicationJSONType)
 	writer.WriteHeader(http.StatusCreated)
 	enc := json.NewEncoder(writer)
 	if err := enc.Encode(response); err != nil {
-		http.Error(writer, "Internal server error", http.StatusInternalServerError)
-		logger.Errorw("error encoding response", "err", err)
+		http.Error(writer, internalServerError, http.StatusInternalServerError)
+		logger.Errorf("error encoding response for batch response: %v", err)
 		return
 	}
 }
 
-func CheckDatabaseConnection(ctx context.Context, writer http.ResponseWriter, str storage.Storage, logger *zap.SugaredLogger) {
+func CheckDatabaseConnection(
+	ctx context.Context,
+	writer http.ResponseWriter,
+	str storage.Storage,
+	logger *zap.SugaredLogger,
+) {
 	if err := str.Ping(ctx); err != nil {
-		http.Error(writer, "Internal server error", http.StatusInternalServerError)
-		logger.Errorw("Failed to connect database", "err", err)
+		http.Error(writer, internalServerError, http.StatusInternalServerError)
+		logger.Errorf("Failed to connect database: %v", err)
 		return
 	}
 	writer.WriteHeader(http.StatusOK)
 }
 
-func GetUserURLs(ctx context.Context, writer http.ResponseWriter, request *http.Request, str storage.Storage, logger *zap.SugaredLogger) {
+func GetUserURLs(
+	ctx context.Context,
+	writer http.ResponseWriter,
+	request *http.Request,
+	str storage.Storage,
+	logger *zap.SugaredLogger,
+) {
 	requestContext := request.Context()
 	userID := requestContext.Value(authorization.UserIDContextKey)
 
 	urls, err := str.UserURLs(ctx, userID.(string))
 	if err != nil {
-		http.Error(writer, "Internal server error", http.StatusInternalServerError)
-		logger.Errorw("failed to get user urls", "err", err)
+		http.Error(writer, internalServerError, http.StatusInternalServerError)
+		logger.Errorf("failed to get user urls from storage: %v", err)
 		return
 	}
 
-	writer.Header().Set("content-type", "application/json")
+	writer.Header().Set(contentTypeKey, applicationJSONType)
 	if len(urls) == 0 {
 		writer.WriteHeader(http.StatusNoContent)
 		return
@@ -197,43 +231,49 @@ func GetUserURLs(ctx context.Context, writer http.ResponseWriter, request *http.
 	writer.WriteHeader(http.StatusOK)
 	enc := json.NewEncoder(writer)
 	if err := enc.Encode(urls); err != nil {
-		http.Error(writer, "Internal server error", http.StatusInternalServerError)
-		logger.Errorw("error encoding response", "err", err)
+		http.Error(writer, internalServerError, http.StatusInternalServerError)
+		logger.Errorf("error encoding response for get user urls: %v", err)
 		return
 	}
 }
 
-func DeleteUserURLs(ctx context.Context, writer http.ResponseWriter, request *http.Request, cfg config.Config, str storage.Storage, logger *zap.SugaredLogger) {
+func DeleteUserURLs(
+	ctx context.Context,
+	writer http.ResponseWriter,
+	request *http.Request,
+	cfg config.Config,
+	str storage.Storage,
+	logger *zap.SugaredLogger,
+) {
 	requestContext := request.Context()
 	userID := requestContext.Value(authorization.UserIDContextKey)
 	var req models.DeleteUrlsRequest
 
 	dec := json.NewDecoder(request.Body)
 	if err := dec.Decode(&req); err != nil {
-		http.Error(writer, "Internal server error", http.StatusInternalServerError)
-		logger.Errorw("cannot decode request JSON body", "err", err)
+		http.Error(writer, internalServerError, http.StatusInternalServerError)
+		logger.Errorf("cannot decode request JSON body for deleting urls: %v", err)
 		return
 	}
 
-	var shortURLs []string
-
-	for _, h := range req {
+	shortURLs := make([]string, len(req))
+	for i, h := range req {
 		shortURL, err := url.JoinPath(cfg.BaseAddress, h)
 		if err != nil {
-			http.Error(writer, "Internal server error", http.StatusInternalServerError)
-			logger.Errorw("failed to get shortURL", "err", err)
+			http.Error(writer, internalServerError, http.StatusInternalServerError)
+			logger.Errorf("failed to get shortURL for deleting urls: %v", err)
 			return
 		}
 
-		shortURLs = append(shortURLs, shortURL)
+		shortURLs[i] = shortURL
 	}
 
 	writer.WriteHeader(http.StatusAccepted)
 	go func() {
 		err := deletingUserUrls(ctx, str, shortURLs, userID.(string))
 		if err != nil {
-			http.Error(writer, "Internal server error", http.StatusInternalServerError)
-			logger.Errorw("failed to delete URLs", "err", err)
+			http.Error(writer, internalServerError, http.StatusInternalServerError)
+			logger.Errorf("failed to delete URLs: %v", err)
 			return
 		}
 	}()

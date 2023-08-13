@@ -15,8 +15,11 @@ type Config struct {
 	MaxIdleDBConnections int
 }
 
+const maxDBConnections = 100
+const maxIdleDBConnections = 100
+
 func GetConfig() Config {
-	var cfg = Config{MaxDBConnections: 100, MaxIdleDBConnections: 100}
+	var cfg = Config{MaxDBConnections: maxDBConnections, MaxIdleDBConnections: maxIdleDBConnections}
 
 	flag.StringVar(&cfg.ServerAddress, "a", "localhost:8080", "server address")
 	flag.StringVar(&cfg.BaseAddress, "b", "http://localhost:8080", "base address")
